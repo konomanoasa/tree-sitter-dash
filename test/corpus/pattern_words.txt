@@ -1,0 +1,145 @@
+==================
+pattern source remains structured across words and path components
+==================
+
+printf src/*.c file?.txt '[*]' \? "[abc]"
+printf src/*/file?.[ch]
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal)
+                      (pattern_star_source)
+                      (literal))
+                    (word
+                      (literal)
+                      (pattern_question_source)
+                      (literal))
+                    (word
+                      (single_quoted
+                        (single_quote_content)))
+                    (word
+                      (escaped_character))
+                    (word
+                      (double_quoted
+                        (double_quote_text)))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal)
+                      (pattern_star_source)
+                      (literal)
+                      (pattern_question_source)
+                      (literal)
+                      (pattern_bracket_source
+                        (pattern_bracket_members_source
+                          (pattern_bracket_character_source)
+                          (pattern_bracket_character_source)))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+assignments and redirections reuse word pattern source
+==================
+
+FILES=src/*.c printf value >out?.txt
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  prefix: (cmd_prefix
+                    assignment: (assignment_word
+                      name: (variable_name)
+                      value: (assignment_value
+                        (literal)
+                        (pattern_star_source)
+                        (literal))))
+                  word: (cmd_word
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))
+                    redirect: (io_redirect
+                      body: (io_file
+                        filename: (filename
+                          word: (word
+                            (literal)
+                            (pattern_question_source)
+                            (literal))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+pattern nodes retain source shape without asserting runtime validity
+==================
+
+printf a[b/c]d [[:not_a_posix_name:]]
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal)
+                      (pattern_bracket_source
+                        (pattern_bracket_members_source
+                          (pattern_bracket_character_source)
+                          (pattern_bracket_character_source)
+                          (pattern_bracket_character_source)))
+                      (literal))
+                    (word
+                      (pattern_bracket_source
+                        (pattern_bracket_members_source
+                          (pattern_character_class_source
+                            (pattern_character_class_content_source))))))))))))))
+  (linebreak
+    (newline_list)))

@@ -1,0 +1,280 @@
+==================
+adjacent source parts form one word
+==================
+
+printf pre\ value'suffix'"tail"$name${other}
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)
+                      (escaped_character)
+                      (literal)
+                      (single_quoted
+                        (single_quote_content))
+                      (double_quoted
+                        (double_quote_text))
+                      (parameter_expansion
+                        parameter: (variable_name))
+                      (parameter_expansion
+                        parameter: (variable_name))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+reserved spellings after word-internal boundaries stay word source
+==================
+
+echo /then
+echo "x"done
+echo ~/elif
+cmd >a/esac
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (double_quoted
+                        (double_quote_text))
+                      (literal))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (tilde_expansion)
+                      (literal))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_file
+                        (filename
+                          (word
+                            (literal))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+unicode source ranges
+:cst
+==================
+printf é😀
+printf é
+
+------------------
+
+0:0  - 2:0    program
+0:0  - 1:10     commands: complete_commands
+0:0  - 0:13       command: complete_command
+0:0  - 0:13         body: list
+0:0  - 0:13           and_or: and_or
+0:0  - 0:13             pipeline: pipeline
+0:0  - 0:13               sequence: pipe_sequence
+0:0  - 0:13                 command: command
+0:0  - 0:13                   body: simple_command
+0:0  - 0:6                      name: cmd_name
+0:0  - 0:6                        word
+0:0  - 0:6                          literal `printf`
+0:6  - 0:13                     suffix: cmd_suffix
+0:7  - 0:13                       word: word
+0:7  - 0:13                         literal `é😀`
+0:13 - 1:0        separator: newline_list
+0:13 - 1:0          "\n"
+1:0  - 1:10       command: complete_command
+1:0  - 1:10         body: list
+1:0  - 1:10           and_or: and_or
+1:0  - 1:10             pipeline: pipeline
+1:0  - 1:10               sequence: pipe_sequence
+1:0  - 1:10                 command: command
+1:0  - 1:10                   body: simple_command
+1:0  - 1:6                      name: cmd_name
+1:0  - 1:6                        word
+1:0  - 1:6                          literal `printf`
+1:6  - 1:10                     suffix: cmd_suffix
+1:7  - 1:10                       word: word
+1:7  - 1:10                         literal `é`
+1:10 - 2:0      trailing: linebreak
+1:10 - 2:0        newline_list
+1:10 - 2:0          "\n"
+
+==================
+shell word vertical tab
+:cst
+==================
+echo ab
+
+------------------
+
+0:0 - 1:0   program
+0:0 - 0:8     commands: complete_commands
+0:0 - 0:8       command: complete_command
+0:0 - 0:8         body: list
+0:0 - 0:8           and_or: and_or
+0:0 - 0:8             pipeline: pipeline
+0:0 - 0:8               sequence: pipe_sequence
+0:0 - 0:8                 command: command
+0:0 - 0:8                   body: simple_command
+0:0 - 0:4                     name: cmd_name
+0:0 - 0:4                       word
+0:0 - 0:4                         literal `echo`
+0:4 - 0:8                     suffix: cmd_suffix
+0:5 - 0:8                       word: word
+0:5 - 0:8                         literal `a\vb`
+0:8 - 1:0     trailing: linebreak
+0:8 - 1:0       newline_list
+0:8 - 1:0         "\n"
+
+==================
+shell word form feed
+:cst
+==================
+echo ab
+
+------------------
+
+0:0 - 1:0   program
+0:0 - 0:8     commands: complete_commands
+0:0 - 0:8       command: complete_command
+0:0 - 0:8         body: list
+0:0 - 0:8           and_or: and_or
+0:0 - 0:8             pipeline: pipeline
+0:0 - 0:8               sequence: pipe_sequence
+0:0 - 0:8                 command: command
+0:0 - 0:8                   body: simple_command
+0:0 - 0:4                     name: cmd_name
+0:0 - 0:4                       word
+0:0 - 0:4                         literal `echo`
+0:4 - 0:8                     suffix: cmd_suffix
+0:5 - 0:8                       word: word
+0:5 - 0:8                         literal `a\fb`
+0:8 - 1:0     trailing: linebreak
+0:8 - 1:0       newline_list
+0:8 - 1:0         "\n"
+
+==================
+a bare backslash is retained as the command at EOF
+:cst
+==================
+\
+------------------
+
+0:0 - 0:1   program
+0:0 - 0:1     commands: complete_commands
+0:0 - 0:1       command: complete_command
+0:0 - 0:1         body: list
+0:0 - 0:1           and_or: and_or
+0:0 - 0:1             pipeline: pipeline
+0:0 - 0:1               sequence: pipe_sequence
+0:0 - 0:1                 command: command
+0:0 - 0:1                   body: simple_command
+0:0 - 0:1                     name: cmd_name
+0:0 - 0:1                       word
+0:0 - 0:1                         escaped_character `\\`
+
+==================
+a bare backslash is retained as an argument at EOF
+:cst
+==================
+: \
+------------------
+
+0:0 - 0:3   program
+0:0 - 0:3     commands: complete_commands
+0:0 - 0:3       command: complete_command
+0:0 - 0:3         body: list
+0:0 - 0:3           and_or: and_or
+0:0 - 0:3             pipeline: pipeline
+0:0 - 0:3               sequence: pipe_sequence
+0:0 - 0:3                 command: command
+0:0 - 0:3                   body: simple_command
+0:0 - 0:1                     name: cmd_name
+0:0 - 0:1                       word
+0:0 - 0:1                         literal `:`
+0:1 - 0:3                     suffix: cmd_suffix
+0:2 - 0:3                       word: word
+0:2 - 0:3                         escaped_character `\\`
+
+==================
+a trailing backslash stays in its argument at EOF
+:cst
+==================
+: x\
+------------------
+
+0:0 - 0:4   program
+0:0 - 0:4     commands: complete_commands
+0:0 - 0:4       command: complete_command
+0:0 - 0:4         body: list
+0:0 - 0:4           and_or: and_or
+0:0 - 0:4             pipeline: pipeline
+0:0 - 0:4               sequence: pipe_sequence
+0:0 - 0:4                 command: command
+0:0 - 0:4                   body: simple_command
+0:0 - 0:1                     name: cmd_name
+0:0 - 0:1                       word
+0:0 - 0:1                         literal `:`
+0:1 - 0:4                     suffix: cmd_suffix
+0:2 - 0:4                       word: word
+0:2 - 0:3                         literal `x`
+0:3 - 0:4                         escaped_character `\\`

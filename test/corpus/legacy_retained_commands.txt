@@ -1,0 +1,736 @@
+==================
+retained body word has only local arguments in a pipeline
+==================
+
+: `cat <<A <<B)word
+A
+$(arg | next)
+B
+`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (backquote_substitution
+                        body: (backquote_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (simple_command
+                                          name: (cmd_name
+                                            (word
+                                              (literal)))
+                                          suffix: (cmd_suffix
+                                            redirect: (io_redirect
+                                              body: (io_here
+                                                operator: (dless)
+                                                end: (here_end
+                                                  word: (here_end_text))))
+                                            redirect: (io_redirect
+                                              body: (io_here
+                                                operator: (dless)
+                                                end: (here_end
+                                                  word: (here_end_text))))))))))))))
+                        remainder: (backquote_remainder
+                          text: (backquote_remainder_text)
+                          (here_document_sequence
+                            document: (here_document
+                              body: (here_document_body
+                                (here_document_text))
+                              end: (here_document_end
+                                (here_document_end_text)))
+                            document: (here_document
+                              body: (here_document_body
+                                (command_substitution
+                                  body: (command_substitution_body
+                                    (complete_commands
+                                      command: (complete_command
+                                        body: (list
+                                          and_or: (and_or
+                                            pipeline: (pipeline
+                                              sequence: (pipe_sequence
+                                                command: (command
+                                                  body: (simple_command
+                                                    suffix: (cmd_suffix
+                                                      word: (word
+                                                        (literal)))))
+                                                command: (command
+                                                  body: (simple_command
+                                                    name: (cmd_name
+                                                      (word
+                                                        (literal))))))))))))))
+                              end: (here_document_end
+                                (here_document_end_text))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+retained quoted assignment precedes a local prefix and command word
+==================
+
+: `cat <<'A' <<B)v=old
+A
+$(n=new printf X)
+B
+`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (backquote_substitution
+                        body: (backquote_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (simple_command
+                                          name: (cmd_name
+                                            (word
+                                              (literal)))
+                                          suffix: (cmd_suffix
+                                            redirect: (io_redirect
+                                              body: (io_here
+                                                operator: (dless)
+                                                end: (here_end
+                                                  word: (here_end_text))))
+                                            redirect: (io_redirect
+                                              body: (io_here
+                                                operator: (dless)
+                                                end: (here_end
+                                                  word: (here_end_text))))))))))))))
+                        remainder: (backquote_remainder
+                          text: (backquote_remainder_text)
+                          (here_document_sequence
+                            document: (here_document
+                              body: (quoted_here_document_body
+                                (quoted_here_document_text))
+                              end: (here_document_end
+                                (here_document_end_text)))
+                            document: (here_document
+                              body: (here_document_body
+                                (command_substitution
+                                  body: (command_substitution_body
+                                    (complete_commands
+                                      command: (complete_command
+                                        body: (list
+                                          and_or: (and_or
+                                            pipeline: (pipeline
+                                              sequence: (pipe_sequence
+                                                command: (command
+                                                  body: (simple_command
+                                                    prefix: (cmd_prefix
+                                                      assignment: (assignment_word
+                                                        name: (variable_name)
+                                                        value: (assignment_value
+                                                          (literal))))
+                                                    word: (cmd_word
+                                                      (word
+                                                        (literal)))
+                                                    suffix: (cmd_suffix
+                                                      word: (word
+                                                        (literal))))))))))))))
+                              end: (here_document_end
+                                (here_document_end_text))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+retained opening parenthesis belongs to the preceding remainder
+==================
+
+: `cat <<A($(printf X))
+`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (backquote_substitution
+                        body: (backquote_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (simple_command
+                                          name: (cmd_name
+                                            (word
+                                              (literal)))
+                                          suffix: (cmd_suffix
+                                            redirect: (io_redirect
+                                              body: (io_here
+                                                operator: (dless)
+                                                end: (here_end
+                                                  word: (here_end_text)))))))))))
+                              remainder: (backquote_remainder
+                                text: (backquote_remainder_text)
+                                (here_document_sequence
+                                  document: (here_document
+                                    body: (here_document_body
+                                      (command_substitution
+                                        body: (command_substitution_body
+                                          (complete_commands
+                                            command: (complete_command
+                                              body: (list
+                                                and_or: (and_or
+                                                  pipeline: (pipeline
+                                                    sequence: (pipe_sequence
+                                                      command: (command
+                                                        body: (compound_command
+                                                          (subshell
+                                                            body: (compound_list
+                                                              body: (term
+                                                                and_or: (and_or
+                                                                  pipeline: (pipeline
+                                                                    sequence: (pipe_sequence
+                                                                      command: (command
+                                                                        body: (simple_command
+                                                                          name: (cmd_name
+                                                                            (word
+                                                                              (literal)))
+                                                                          suffix: (cmd_suffix
+                                                                            word: (word
+                                                                              (literal)))))))))))))))))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+empty retained body permits a function with no local name
+==================
+
+: `cat <<A <<B)A
+$( () { :; })
+B
+`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (backquote_substitution
+                        body: (backquote_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (simple_command
+                                          name: (cmd_name
+                                            (word
+                                              (literal)))
+                                          suffix: (cmd_suffix
+                                            redirect: (io_redirect
+                                              body: (io_here
+                                                operator: (dless)
+                                                end: (here_end
+                                                  word: (here_end_text))))
+                                            redirect: (io_redirect
+                                              body: (io_here
+                                                operator: (dless)
+                                                end: (here_end
+                                                  word: (here_end_text))))))))))))))
+                        remainder: (backquote_remainder
+                          text: (backquote_remainder_text)
+                          (here_document_sequence
+                            document: (here_document
+                              end: (here_document_end
+                                (here_document_end_text)))
+                            document: (here_document
+                              body: (here_document_body
+                                (command_substitution
+                                  body: (command_substitution_body
+                                    (complete_commands
+                                      command: (complete_command
+                                        body: (list
+                                          and_or: (and_or
+                                            pipeline: (pipeline
+                                              sequence: (pipe_sequence
+                                                command: (command
+                                                  body: (function_definition
+                                                    body: (function_body
+                                                      body: (compound_command
+                                                        (brace_group
+                                                          body: (compound_list
+                                                            body: (term
+                                                              and_or: (and_or
+                                                                pipeline: (pipeline
+                                                                  sequence: (pipe_sequence
+                                                                    command: (command
+                                                                      body: (simple_command
+                                                                        name: (cmd_name
+                                                                          (word
+                                                                            (literal)))))))))
+                                                            terminator: (separator
+                                                              operator: (separator_op)))))))))))))))))
+                              end: (here_document_end
+                                (here_document_end_text))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+compound remainder supplies an if without a local opening keyword
+==================
+
+: `(cat <<A)if
+$(:; then :; fi)$(later)
+A
+`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (backquote_substitution
+                        body: (backquote_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (compound_command
+                                          (subshell
+                                            body: (compound_list
+                                              body: (term
+                                                and_or: (and_or
+                                                  pipeline: (pipeline
+                                                    sequence: (pipe_sequence
+                                                      command: (command
+                                                        body: (simple_command
+                                                          name: (cmd_name
+                                                            (word
+                                                              (literal)))
+                                                          suffix: (cmd_suffix
+                                                            redirect: (io_redirect
+                                                              body: (io_here
+                                                                operator: (dless)
+                                                                end: (here_end
+                                                                  word: (here_end_text))))))))))))))
+                                        remainder: (backquote_remainder
+                                          word: (word
+                                            (literal))
+                                          (here_document_sequence
+                                            document: (here_document
+                                              body: (here_document_body
+                                                (command_substitution
+                                                  body: (command_substitution_body
+                                                    (complete_commands
+                                                      command: (complete_command
+                                                        body: (list
+                                                          and_or: (and_or
+                                                            pipeline: (pipeline
+                                                              sequence: (pipe_sequence
+                                                                command: (command
+                                                                  body: (compound_command
+                                                                    (if_clause
+                                                                      condition: (compound_list
+                                                                        body: (term
+                                                                          and_or: (and_or
+                                                                            pipeline: (pipeline
+                                                                              sequence: (pipe_sequence
+                                                                                command: (command
+                                                                                  body: (simple_command
+                                                                                    name: (cmd_name
+                                                                                      (word
+                                                                                        (literal)))))))))
+                                                                        terminator: (separator
+                                                                          operator: (separator_op)))
+                                                                      (then_keyword)
+                                                                      consequence: (compound_list
+                                                                        body: (term
+                                                                          and_or: (and_or
+                                                                            pipeline: (pipeline
+                                                                              sequence: (pipe_sequence
+                                                                                command: (command
+                                                                                  body: (simple_command
+                                                                                    name: (cmd_name
+                                                                                      (word
+                                                                                        (literal)))))))))
+                                                                        terminator: (separator
+                                                                          operator: (separator_op)))
+                                                                      (fi_keyword))))))))))))
+                                                (command_substitution
+                                                  body: (command_substitution_body
+                                                    (complete_commands
+                                                      command: (complete_command
+                                                        body: (list
+                                                          and_or: (and_or
+                                                            pipeline: (pipeline
+                                                              sequence: (pipe_sequence
+                                                                command: (command
+                                                                  body: (simple_command
+                                                                    name: (cmd_name
+                                                                      (word
+                                                                        (literal))))))))))))))
+                                              end: (here_document_end
+                                                (here_document_end_text))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a retained command owns the newline before the next modern command
+==================
+
+: `(cat <<A)probe
+$(
+next
+)
+A
+`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (backquote_substitution
+                        body: (backquote_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (compound_command
+                                          (subshell
+                                            body: (compound_list
+                                              body: (term
+                                                and_or: (and_or
+                                                  pipeline: (pipeline
+                                                    sequence: (pipe_sequence
+                                                      command: (command
+                                                        body: (simple_command
+                                                          name: (cmd_name
+                                                            (word
+                                                              (literal)))
+                                                          suffix: (cmd_suffix
+                                                            redirect: (io_redirect
+                                                              body: (io_here
+                                                                operator: (dless)
+                                                                end: (here_end
+                                                                  word: (here_end_text))))))))))))))
+                                        remainder: (backquote_remainder
+                                          word: (word
+                                            (literal))
+                                          (here_document_sequence
+                                            document: (here_document
+                                              body: (here_document_body
+                                                (command_substitution
+                                                  body: (command_substitution_body
+                                                    (complete_commands
+                                                      separator: (newline_list)
+                                                      command: (complete_command
+                                                        body: (list
+                                                          and_or: (and_or
+                                                            pipeline: (pipeline
+                                                              sequence: (pipe_sequence
+                                                                command: (command
+                                                                  body: (simple_command
+                                                                    name: (cmd_name
+                                                                      (word
+                                                                        (literal)))))))))))
+                                                    (linebreak
+                                                      (newline_list)))))
+                                              end: (here_document_end
+                                                (here_document_end_text))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a retained command owns a comment separator before the next legacy command
+==================
+
+: `(cat <<A)probe
+\` # note
+next
+\`
+A
+`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (backquote_substitution
+                        body: (backquote_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (compound_command
+                                          (subshell
+                                            body: (compound_list
+                                              body: (term
+                                                and_or: (and_or
+                                                  pipeline: (pipeline
+                                                    sequence: (pipe_sequence
+                                                      command: (command
+                                                        body: (simple_command
+                                                          name: (cmd_name
+                                                            (word
+                                                              (literal)))
+                                                          suffix: (cmd_suffix
+                                                            redirect: (io_redirect
+                                                              body: (io_here
+                                                                operator: (dless)
+                                                                end: (here_end
+                                                                  word: (here_end_text))))))))))))))
+                                        remainder: (backquote_remainder
+                                          word: (word
+                                            (literal))
+                                          (here_document_sequence
+                                            document: (here_document
+                                              body: (here_document_body
+                                                (backquote_substitution
+                                                  body: (backquote_substitution_body
+                                                    (complete_commands
+                                                      separator: (newline_list
+                                                        (comment
+                                                          (comment_text)))
+                                                      command: (complete_command
+                                                        body: (list
+                                                          and_or: (and_or
+                                                            pipeline: (pipeline
+                                                              sequence: (pipe_sequence
+                                                                command: (command
+                                                                  body: (simple_command
+                                                                    name: (cmd_name
+                                                                      (word
+                                                                        (literal)))))))))))
+                                                    (linebreak
+                                                      (newline_list)))))
+                                              end: (here_document_end
+                                                (here_document_end_text))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a retained right brace ends the legacy consumer before its physical commands
+==================
+
+: `(cat <<A)}
+\`printf WRONG\`
+A
+`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (backquote_substitution
+                        body: (backquote_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (compound_command
+                                          (subshell
+                                            body: (compound_list
+                                              body: (term
+                                                and_or: (and_or
+                                                  pipeline: (pipeline
+                                                    sequence: (pipe_sequence
+                                                      command: (command
+                                                        body: (simple_command
+                                                          name: (cmd_name
+                                                            (word
+                                                              (literal)))
+                                                          suffix: (cmd_suffix
+                                                            redirect: (io_redirect
+                                                              body: (io_here
+                                                                operator: (dless)
+                                                                end: (here_end
+                                                                  word: (here_end_text))))))))))))))
+                                        remainder: (backquote_remainder
+                                          word: (word
+                                            (literal))
+                                          (here_document_sequence
+                                            document: (here_document
+                                              body: (here_document_body
+                                                (backquote_substitution
+                                                  remainder: (backquote_remainder
+                                                    text: (backquote_remainder_text))))
+                                              end: (here_document_end
+                                                (here_document_end_text))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a retained right brace cannot start an empty modern substitution
+:error
+==================
+
+: `(cat <<A)}
+$()
+A
+`
+
+------------------
+
+==================
+a retained in cannot be skipped by an empty legacy substitution
+:error
+==================
+
+: `(cat <<A)in
+\`\`
+A
+`
+
+------------------
+
+==================
+a retained in cannot be skipped by a legacy command word
+:error
+==================
+
+: `(cat <<A)in
+\`:\`
+A
+`
+
+------------------
+
+==================
+a retained in cannot be skipped by a legacy assignment
+:error
+==================
+
+: `(cat <<A)in
+\`v=X\`
+A
+`
+
+------------------

@@ -1,0 +1,972 @@
+==================
+a brace group can be a function body
+==================
+
+brace_body() { :; }
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (brace_group
+                        (compound_list
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          (separator
+                            (separator_op))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+a subshell can be a function body
+==================
+
+subshell_body() (:)
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (subshell
+                        (compound_list
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+a for clause can be a function body
+==================
+
+for_body() for item; do :; done
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (for_clause
+                        (for_keyword)
+                        (name)
+                        (sequential_sep)
+                        (do_group
+                          (do_keyword)
+                          (compound_list
+                            (term
+                              (and_or
+                                (pipeline
+                                  (pipe_sequence
+                                    (command
+                                      (simple_command
+                                        (cmd_name
+                                          (word
+                                            (literal)))))))))
+                            (separator
+                              (separator_op)))
+                          (done_keyword)))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+a case clause can be a function body
+==================
+
+case_body() case item in item) :;; esac
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (case_clause
+                        (case_keyword)
+                        (word
+                          (literal))
+                        (in
+                          (in_keyword))
+                        (case_list
+                          (case_item
+                            (pattern_list
+                              (word
+                                (literal)))
+                            (compound_list
+                              (term
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal))))))))))
+                            (dsemi)))
+                        (esac_keyword))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+an if clause can be a function body
+==================
+
+if_body() if :; then :; fi
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (if_clause
+                        (if_keyword)
+                        (compound_list
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          (separator
+                            (separator_op)))
+                        (then_keyword)
+                        (compound_list
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          (separator
+                            (separator_op)))
+                        (fi_keyword))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+a while clause can be a function body
+==================
+
+while_body() while :; do :; done
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (while_clause
+                        (while_keyword)
+                        (compound_list
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          (separator
+                            (separator_op)))
+                        (do_group
+                          (do_keyword)
+                          (compound_list
+                            (term
+                              (and_or
+                                (pipeline
+                                  (pipe_sequence
+                                    (command
+                                      (simple_command
+                                        (cmd_name
+                                          (word
+                                            (literal)))))))))
+                            (separator
+                              (separator_op)))
+                          (done_keyword)))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+an until clause can be a function body
+==================
+
+until_body() until :; do :; done
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (until_clause
+                        (until_keyword)
+                        (compound_list
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          (separator
+                            (separator_op)))
+                        (do_group
+                          (do_keyword)
+                          (compound_list
+                            (term
+                              (and_or
+                                (pipeline
+                                  (pipe_sequence
+                                    (command
+                                      (simple_command
+                                        (cmd_name
+                                          (word
+                                            (literal)))))))))
+                            (separator
+                              (separator_op)))
+                          (done_keyword)))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+function bodies retain multiline conditionals around assignment-only commands
+==================
+
+if_worker() {
+  before
+  if :; then
+    :
+  fi
+  value=1
+  after
+}
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (brace_group
+                        (compound_list
+                          (linebreak
+                            (newline_list))
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal))))))))
+                            (separator
+                              (newline_list))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (compound_command
+                                      (if_clause
+                                        (if_keyword)
+                                        (compound_list
+                                          (term
+                                            (and_or
+                                              (pipeline
+                                                (pipe_sequence
+                                                  (command
+                                                    (simple_command
+                                                      (cmd_name
+                                                        (word
+                                                          (literal)))))))))
+                                          (separator
+                                            (separator_op)))
+                                        (then_keyword)
+                                        (compound_list
+                                          (linebreak
+                                            (newline_list))
+                                          (term
+                                            (and_or
+                                              (pipeline
+                                                (pipe_sequence
+                                                  (command
+                                                    (simple_command
+                                                      (cmd_name
+                                                        (word
+                                                          (literal)))))))))
+                                          (separator
+                                            (newline_list)))
+                                        (fi_keyword)))))))
+                            (separator
+                              (newline_list))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_prefix
+                                        (assignment_word
+                                          (variable_name)
+                                          (assignment_value
+                                            (literal)))))))))
+                            (separator
+                              (newline_list))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          (separator
+                            (newline_list))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+function bodies retain one term across multiline conditionals and loops
+==================
+
+for_worker() {
+  a=
+  if :; then
+    :
+  else
+    :
+  fi
+  for x; do :; done
+  b=
+}
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (function_definition
+                  name: (fname)
+                  body: (function_body
+                    body: (compound_command
+                      (brace_group
+                        body: (compound_list
+                          leading: (linebreak
+                            (newline_list))
+                          body: (term
+                            and_or: (and_or
+                              pipeline: (pipeline
+                                sequence: (pipe_sequence
+                                  command: (command
+                                    body: (simple_command
+                                      prefix: (cmd_prefix
+                                        assignment: (assignment_word
+                                          name: (variable_name))))))))
+                            separator: (separator
+                              newlines: (newline_list))
+                            and_or: (and_or
+                              pipeline: (pipeline
+                                sequence: (pipe_sequence
+                                  command: (command
+                                    body: (compound_command
+                                      (if_clause
+                                        (if_keyword)
+                                        condition: (compound_list
+                                          body: (term
+                                            and_or: (and_or
+                                              pipeline: (pipeline
+                                                sequence: (pipe_sequence
+                                                  command: (command
+                                                    body: (simple_command
+                                                      name: (cmd_name
+                                                        (word
+                                                          (literal)))))))))
+                                          terminator: (separator
+                                            operator: (separator_op)))
+                                        (then_keyword)
+                                        consequence: (compound_list
+                                          leading: (linebreak
+                                            (newline_list))
+                                          body: (term
+                                            and_or: (and_or
+                                              pipeline: (pipeline
+                                                sequence: (pipe_sequence
+                                                  command: (command
+                                                    body: (simple_command
+                                                      name: (cmd_name
+                                                        (word
+                                                          (literal)))))))))
+                                          terminator: (separator
+                                            newlines: (newline_list)))
+                                        alternative: (else_part
+                                          (else_keyword)
+                                          body: (compound_list
+                                            leading: (linebreak
+                                              (newline_list))
+                                            body: (term
+                                              and_or: (and_or
+                                                pipeline: (pipeline
+                                                  sequence: (pipe_sequence
+                                                    command: (command
+                                                      body: (simple_command
+                                                        name: (cmd_name
+                                                          (word
+                                                            (literal)))))))))
+                                            terminator: (separator
+                                              newlines: (newline_list))))
+                                        (fi_keyword)))))))
+                            separator: (separator
+                              newlines: (newline_list))
+                            and_or: (and_or
+                              pipeline: (pipeline
+                                sequence: (pipe_sequence
+                                  command: (command
+                                    body: (compound_command
+                                      (for_clause
+                                        (for_keyword)
+                                        name: (name)
+                                        separator: (sequential_sep)
+                                        body: (do_group
+                                          (do_keyword)
+                                          body: (compound_list
+                                            body: (term
+                                              and_or: (and_or
+                                                pipeline: (pipeline
+                                                  sequence: (pipe_sequence
+                                                    command: (command
+                                                      body: (simple_command
+                                                        name: (cmd_name
+                                                          (word
+                                                            (literal)))))))))
+                                            terminator: (separator
+                                              operator: (separator_op)))
+                                          (done_keyword))))))))
+                            separator: (separator
+                              newlines: (newline_list))
+                            and_or: (and_or
+                              pipeline: (pipeline
+                                sequence: (pipe_sequence
+                                  command: (command
+                                    body: (simple_command
+                                      prefix: (cmd_prefix
+                                        assignment: (assignment_word
+                                          name: (variable_name)))))))))
+                          terminator: (separator
+                            newlines: (newline_list))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a function definition and its following call remain separate commands
+==================
+
+greet() {
+  :
+}
+greet
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (function_definition
+                  name: (fname)
+                  body: (function_body
+                    body: (compound_command
+                      (brace_group
+                        body: (compound_list
+                          leading: (linebreak
+                            (newline_list))
+                          body: (term
+                            and_or: (and_or
+                              pipeline: (pipeline
+                                sequence: (pipe_sequence
+                                  command: (command
+                                    body: (simple_command
+                                      name: (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          terminator: (separator
+                            newlines: (newline_list)))))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a redirected function retains list boundaries
+==================
+
+holder() { :; }>function_output & holder
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (brace_group
+                        (compound_list
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          (separator
+                            (separator_op)))))
+                    (redirect_list
+                      (io_redirect
+                        (io_file
+                          (filename
+                            (word
+                              (literal))))))))))))
+        (separator_op)
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+a function body follows the pending here-document bodies
+==================
+
+cat <<E; f()
+body
+E
+{ :; }
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))))))))
+        separator: (separator_op)
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (function_definition
+                  name: (fname)
+                  linebreak: (linebreak
+                    (newline_list
+                      (here_document_sequence
+                        line_end: (here_document_line_end)
+                        document: (here_document
+                          body: (here_document_body
+                            (here_document_text))
+                          end: (here_document_end
+                            (here_document_end_text))))))
+                  body: (function_body
+                    body: (compound_command
+                      (brace_group
+                        body: (compound_list
+                          body: (term
+                            and_or: (and_or
+                              pipeline: (pipeline
+                                sequence: (pipe_sequence
+                                  command: (command
+                                    body: (simple_command
+                                      name: (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          terminator: (separator
+                            operator: (separator_op))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+reserved words cannot be function names
+:error
+==================
+
+then() { :; }
+
+------------------
+
+
+
+==================
+function names cannot contain hyphens
+:error
+==================
+
+bad-name() { :; }
+
+------------------
+
+
+
+==================
+function names cannot start with digits
+:error
+==================
+
+9bad() { :; }
+
+------------------
+
+==================
+a colon command can be a function body
+==================
+f() :
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (function_definition
+                  name: (fname)
+                  body: (function_body
+                    body: (simple_command
+                      name: (cmd_name (word (literal)))))))))))))
+  trailing: (linebreak (newline_list)))
+
+==================
+a function body retains simple command arguments
+==================
+f() printf x
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (function_definition
+                  name: (fname)
+                  body: (function_body
+                    body: (simple_command
+                      name: (cmd_name (word (literal)))
+                      suffix: (cmd_suffix word: (word (literal)))))))))))))
+  trailing: (linebreak (newline_list)))
+
+==================
+a function definition can be a function body
+==================
+f() g() :
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (function_definition
+                  name: (fname)
+                  body: (function_body
+                    body: (function_definition
+                      name: (fname)
+                      body: (function_body
+                        body: (simple_command
+                          name: (cmd_name (word (literal)))))))))))))))
+  trailing: (linebreak (newline_list)))
+
+==================
+command is a function name across horizontal whitespace
+==================
+command 	() :
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (function_definition
+                  name: (fname)
+                  body: (function_body
+                    body: (simple_command
+                      name: (cmd_name
+                        (word
+                          (literal)))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a modern substitution recognizes a spaced command function
+==================
+: $(command () :)
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (command_substitution
+                        body: (command_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (function_definition
+                                          name: (fname)
+                                          body: (function_body
+                                            body: (simple_command
+                                              name: (cmd_name
+                                                (word
+                                                  (literal)))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a legacy substitution recognizes a spaced command function
+==================
+: `command () :`
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (backquote_substitution
+                        body: (backquote_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (function_definition
+                                          name: (fname)
+                                          body: (function_body
+                                            body: (simple_command
+                                              name: (cmd_name
+                                                (word
+                                                  (literal)))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a spaced export cannot become a legacy function or unread remainder
+:error
+==================
+: `export () :`
+
+------------------
+
+==================
+a quoted command name cannot become a legacy function or unread remainder
+:error
+==================
+: `'command' () :`
+
+------------------
+
+==================
+a partially quoted declaration name cannot start a legacy function
+:error
+==================
+: `'ex'port () :`
+
+------------------

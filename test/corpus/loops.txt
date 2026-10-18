@@ -1,0 +1,596 @@
+==================
+for clauses allow implicit iteration before a do keyword
+==================
+
+for item do
+  use "$item"
+done
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (for_clause
+                    (for_keyword)
+                    name: (name)
+                    body: (do_group
+                      (do_keyword)
+                      body: (compound_list
+                        leading: (linebreak
+                          (newline_list))
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))
+                                    suffix: (cmd_suffix
+                                      word: (word
+                                        (double_quoted
+                                          (parameter_expansion
+                                            parameter: (variable_name)))))))))))
+                        terminator: (separator
+                          newlines: (newline_list)))
+                      (done_keyword)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+for clauses allow a semicolon before an implicit iteration body
+==================
+
+for item; do :; done
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (for_clause
+                    (for_keyword)
+                    name: (name)
+                    separator: (sequential_sep)
+                    body: (do_group
+                      (do_keyword)
+                      body: (compound_list
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        terminator: (separator
+                          operator: (separator_op)))
+                      (done_keyword)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+for clauses allow a newline before an implicit iteration body
+==================
+
+for item
+do :; done
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (for_clause
+                    (for_keyword)
+                    name: (name)
+                    separator: (sequential_sep
+                      newlines: (newline_list))
+                    body: (do_group
+                      (do_keyword)
+                      body: (compound_list
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        terminator: (separator
+                          operator: (separator_op)))
+                      (done_keyword)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+for clauses retain an explicitly empty word list
+==================
+
+for item in; do :; done
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (for_clause
+                    (for_keyword)
+                    name: (name)
+                    in: (in
+                      (in_keyword))
+                    separator: (sequential_sep)
+                    body: (do_group
+                      (do_keyword)
+                      body: (compound_list
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        terminator: (separator
+                          operator: (separator_op)))
+                      (done_keyword)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+for clauses retain quoted and reserved words in explicit iteration lists
+==================
+
+for item in one "two words" if do
+do
+  use "$item"
+done
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (for_clause
+                    (for_keyword)
+                    name: (name)
+                    in: (in
+                      (in_keyword))
+                    words: (wordlist
+                      word: (word
+                        (literal))
+                      word: (word
+                        (double_quoted
+                          (double_quote_text)))
+                      word: (word
+                        (literal))
+                      word: (word
+                        (literal)))
+                    separator: (sequential_sep
+                      newlines: (newline_list))
+                    body: (do_group
+                      (do_keyword)
+                      body: (compound_list
+                        leading: (linebreak
+                          (newline_list))
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))
+                                    suffix: (cmd_suffix
+                                      word: (word
+                                        (double_quoted
+                                          (parameter_expansion
+                                            parameter: (variable_name)))))))))))
+                        terminator: (separator
+                          newlines: (newline_list)))
+                      (done_keyword)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+while conditions and do bodies retain separate compound lists
+==================
+
+while first | second
+do
+  body
+done
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (while_clause
+                    (while_keyword)
+                    condition: (compound_list
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      terminator: (separator
+                        newlines: (newline_list)))
+                    body: (do_group
+                      (do_keyword)
+                      body: (compound_list
+                        leading: (linebreak
+                          (newline_list))
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        terminator: (separator
+                          newlines: (newline_list)))
+                      (done_keyword)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+until conditions and do bodies retain separate compound lists
+==================
+
+until ready; do wait; done
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (until_clause
+                    (until_keyword)
+                    condition: (compound_list
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      terminator: (separator
+                        operator: (separator_op)))
+                    body: (do_group
+                      (do_keyword)
+                      body: (compound_list
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        terminator: (separator
+                          operator: (separator_op)))
+                      (done_keyword)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+reserved spellings remain for variable names and iteration words
+==================
+
+for in in if then do; do printf "$in"; done
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (for_clause
+                    (for_keyword)
+                    name: (name)
+                    in: (in
+                      (in_keyword))
+                    words: (wordlist
+                      word: (word
+                        (literal))
+                      word: (word
+                        (literal))
+                      word: (word
+                        (literal)))
+                    separator: (sequential_sep)
+                    body: (do_group
+                      (do_keyword)
+                      body: (compound_list
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))
+                                    suffix: (cmd_suffix
+                                      word: (word
+                                        (double_quoted
+                                          (parameter_expansion
+                                            parameter: (variable_name)))))))))))
+                        terminator: (separator
+                          operator: (separator_op)))
+                      (done_keyword)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+for wordlists keep reserved closer spellings as words
+==================
+
+for item in fi then elif else in do done esac; do :; done
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (for_clause
+                    (for_keyword)
+                    (name)
+                    (in
+                      (in_keyword))
+                    (wordlist
+                      (word
+                        (literal))
+                      (word
+                        (literal))
+                      (word
+                        (literal))
+                      (word
+                        (literal))
+                      (word
+                        (literal))
+                      (word
+                        (literal))
+                      (word
+                        (literal))
+                      (word
+                        (literal)))
+                    (sequential_sep)
+                    (do_group
+                      (do_keyword)
+                      (compound_list
+                        (term
+                          (and_or
+                            (pipeline
+                              (pipe_sequence
+                                (command
+                                  (simple_command
+                                    (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        (separator
+                          (separator_op)))
+                      (done_keyword)))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+for loop variables must be POSIX names
+:error
+==================
+
+for bad-name; do :; done
+
+------------------
+
+
+
+==================
+a number sign directly after a for loop name does not start a comment
+:error
+==================
+
+for item#comment
+do :; done
+
+------------------
+
+==================
+implicit for iteration permits a newline before its semicolon
+==================
+for x
+; do :; done
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (for_clause
+                    (for_keyword)
+                    name: (name)
+                    (linebreak (newline_list))
+                    separator: (sequential_sep)
+                    body: (do_group
+                      (do_keyword)
+                      body: (compound_list
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        terminator: (separator
+                          operator: (separator_op)))
+                      (done_keyword)))))))))))
+  trailing: (linebreak (newline_list)))
+
+==================
+implicit for iteration preserves comments and blank lines before a semicolon
+==================
+for x # header
+
+# gap
+  ;
+do :; done
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (for_clause
+                    (for_keyword)
+                    name: (name)
+                    (linebreak (newline_list (comment (comment_text)) (comment (comment_text))))
+                    separator: (sequential_sep linebreak: (linebreak (newline_list)))
+                    body: (do_group
+                      (do_keyword)
+                      body: (compound_list
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        terminator: (separator
+                          operator: (separator_op)))
+                      (done_keyword)))))))))))
+  trailing: (linebreak (newline_list)))
+
+==================
+an explicit for word list rejects a semicolon after its newline
+:error
+==================
+for x in a
+; do :; done
+
+------------------
+
+==================
+an explicitly empty for word list rejects a semicolon after its newline
+:error
+==================
+for x in
+; do :; done
+
+------------------
+
+==================
+implicit for iteration rejects a second semicolon after a newline
+:error
+==================
+for x
+;
+; do :; done
+
+------------------

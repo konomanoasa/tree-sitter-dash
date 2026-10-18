@@ -1,0 +1,253 @@
+==================
+evaluation failure preserves arithmetic source and its operators
+==================
+
+: $((1+))
+
+------------------
+
+(program
+  leading: (linebreak (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name (word (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (arithmetic_expansion
+                        expression: (arithmetic_source
+                          (arithmetic_number)
+                          (arithmetic_operator)))))))))))))
+  trailing: (linebreak (newline_list)))
+
+==================
+empty arithmetic source has no fabricated expression
+==================
+
+: $(( ))
+
+------------------
+
+(program
+  (linebreak (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name (word (literal)))
+                  (cmd_suffix (word (arithmetic_expansion)))))))))))
+  (linebreak (newline_list)))
+
+==================
+adjacent double parenthesis does not fall back to a subshell
+:error
+==================
+
+: $((echo one); (echo two))
+
+------------------
+
+==================
+arithmetic assignment operators remain structured after horizontal layout
+==================
+
+: "$((a = b *= c /= d %= e += f -= g <<= h >>= i &= j ^= k |= l))"
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (double_quoted
+                        (arithmetic_expansion
+                          (arithmetic_assignment_expression
+                            (arithmetic_variable)
+                            (arithmetic_operator)
+                            (arithmetic_assignment_expression
+                              (arithmetic_variable)
+                              (arithmetic_operator)
+                              (arithmetic_assignment_expression
+                                (arithmetic_variable)
+                                (arithmetic_operator)
+                                (arithmetic_assignment_expression
+                                  (arithmetic_variable)
+                                  (arithmetic_operator)
+                                  (arithmetic_assignment_expression
+                                    (arithmetic_variable)
+                                    (arithmetic_operator)
+                                    (arithmetic_assignment_expression
+                                      (arithmetic_variable)
+                                      (arithmetic_operator)
+                                      (arithmetic_assignment_expression
+                                        (arithmetic_variable)
+                                        (arithmetic_operator)
+                                        (arithmetic_assignment_expression
+                                          (arithmetic_variable)
+                                          (arithmetic_operator)
+                                          (arithmetic_assignment_expression
+                                            (arithmetic_variable)
+                                            (arithmetic_operator)
+                                            (arithmetic_assignment_expression
+                                              (arithmetic_variable)
+                                              (arithmetic_operator)
+                                              (arithmetic_assignment_expression
+                                                (arithmetic_variable)
+                                                (arithmetic_operator)
+                                                (arithmetic_variable))))))))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+arithmetic conditional and binary operators preserve their nested precedence
+==================
+
+: "$((a ? b || c && d | e ^ f & g == h != i < j <= k > l >= m << n >> o + p - q * r / s % t : u))"
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (double_quoted
+                        (arithmetic_expansion
+                          (arithmetic_conditional_expression
+                            (arithmetic_variable)
+                            (arithmetic_operator)
+                            (arithmetic_binary_expression
+                              (arithmetic_variable)
+                              (arithmetic_operator)
+                              (arithmetic_binary_expression
+                                (arithmetic_variable)
+                                (arithmetic_operator)
+                                (arithmetic_binary_expression
+                                  (arithmetic_variable)
+                                  (arithmetic_operator)
+                                  (arithmetic_binary_expression
+                                    (arithmetic_variable)
+                                    (arithmetic_operator)
+                                    (arithmetic_binary_expression
+                                      (arithmetic_variable)
+                                      (arithmetic_operator)
+                                      (arithmetic_binary_expression
+                                        (arithmetic_binary_expression
+                                          (arithmetic_variable)
+                                          (arithmetic_operator)
+                                          (arithmetic_variable))
+                                        (arithmetic_operator)
+                                        (arithmetic_binary_expression
+                                          (arithmetic_binary_expression
+                                            (arithmetic_binary_expression
+                                              (arithmetic_binary_expression
+                                                (arithmetic_variable)
+                                                (arithmetic_operator)
+                                                (arithmetic_variable))
+                                              (arithmetic_operator)
+                                              (arithmetic_variable))
+                                            (arithmetic_operator)
+                                            (arithmetic_variable))
+                                          (arithmetic_operator)
+                                          (arithmetic_binary_expression
+                                            (arithmetic_binary_expression
+                                              (arithmetic_variable)
+                                              (arithmetic_operator)
+                                              (arithmetic_variable))
+                                            (arithmetic_operator)
+                                            (arithmetic_binary_expression
+                                              (arithmetic_binary_expression
+                                                (arithmetic_variable)
+                                                (arithmetic_operator)
+                                                (arithmetic_variable))
+                                              (arithmetic_operator)
+                                              (arithmetic_binary_expression
+                                                (arithmetic_binary_expression
+                                                  (arithmetic_binary_expression
+                                                    (arithmetic_variable)
+                                                    (arithmetic_operator)
+                                                    (arithmetic_variable))
+                                                  (arithmetic_operator)
+                                                  (arithmetic_variable))
+                                                (arithmetic_operator)
+                                                (arithmetic_variable)))))))))))
+                            (arithmetic_operator)
+                            (arithmetic_variable))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+a lone closing parenthesis before the final pair is arithmetic source
+:cst
+==================
+: $((x) y))
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:11     commands: complete_commands
+0:0  - 0:11       command: complete_command
+0:0  - 0:11         body: list
+0:0  - 0:11           and_or: and_or
+0:0  - 0:11             pipeline: pipeline
+0:0  - 0:11               sequence: pipe_sequence
+0:0  - 0:11                 command: command
+0:0  - 0:11                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:11                     suffix: cmd_suffix
+0:2  - 0:11                       word: word
+0:2  - 0:11                         arithmetic_expansion
+0:2  - 0:3                            "$"
+0:3  - 0:4                            "("
+0:4  - 0:5                            "("
+0:5  - 0:9                            expression: arithmetic_source
+0:5  - 0:6                              arithmetic_variable `x`
+0:6  - 0:7                              arithmetic_source_fragment `)`
+0:8  - 0:9                              arithmetic_variable `y`
+0:9  - 0:10                           ")"
+0:10 - 0:11                           ")"
+0:11 - 1:0      trailing: linebreak
+0:11 - 1:0        newline_list
+0:11 - 1:0          "\n"
+
+==================
+a closing parenthesis that ends a group does not pair with the final one
+:error
+==================
+: $((1)+(2))
+
+------------------

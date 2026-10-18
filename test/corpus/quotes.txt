@@ -1,0 +1,704 @@
+==================
+single quotes preserve literal multiline source
+==================
+
+printf 'a b
+;$HOME\still'
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (single_quoted
+                        (single_quote_content))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+double quotes expose escapes and parameter expansions
+==================
+
+printf "a\$b\\c\q ${name}"
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (double_quoted
+                        (double_quote_text)
+                        (double_quote_escape)
+                        (double_quote_text)
+                        (double_quote_escape)
+                        (double_quote_text)
+                        (parameter_expansion
+                          (variable_name)))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+dollar single quotes preserve internal separators
+==================
+
+printf $'a b;\'c' tail
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (dollar_single_quoted
+                        (dollar_single_quote_text)
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_text)))
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+dollar single quotes expose escapes and multiline text
+==================
+
+printf $'a\nb\'c\\d\x41\101\cA\q\
+tail'
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (dollar_single_quoted
+                        (dollar_single_quote_text)
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_text)
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_text)
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_text)
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_text))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+dollar single quote control escapes retain their delimiter value
+==================
+
+printf $'\c\\'
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (dollar_single_quoted
+                        (dollar_single_quote_escape))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+dollar single quote control escapes take a lone backslash operand
+==================
+
+printf $'\c\q'
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (dollar_single_quoted
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_text))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+dollar single quote unicode escapes accept surrogate and out-of-range values
+==================
+
+printf $'\ud800\U00110000'
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (dollar_single_quoted
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_escape))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+empty and concatenated quotes still form source words
+==================
+
+printf '' "" pre''post "a"'b'c#tail # ignored
+next
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (single_quoted))
+                    word: (word
+                      (double_quoted))
+                    word: (word
+                      (literal)
+                      (single_quoted)
+                      (literal))
+                    word: (word
+                      (double_quoted
+                        (double_quote_text))
+                      (single_quoted
+                        (single_quote_content))
+                      (literal))))))))))
+    separator: (newline_list
+      (comment
+        (comment_text)))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+quoted and escaped separators stay inside one source word
+==================
+
+printf 'a b;c#d'#suffix "e
+f|g" a\ b c\;d \#literal
+next
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (single_quoted
+                        (single_quote_content))
+                      (literal))
+                    word: (word
+                      (double_quoted
+                        (double_quote_text)))
+                    word: (word
+                      (literal)
+                      (escaped_character)
+                      (literal))
+                    word: (word
+                      (literal)
+                      (escaped_character)
+                      (literal))
+                    word: (word
+                      (escaped_character)
+                      (literal))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+inherited double quotes keep dollar-single-quote source literal
+==================
+
+echo "$'text'"
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (double_quoted
+                        (double_quote_text))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+double-quoted content escape runs stay quoted text
+==================
+
+x=`echo "a\\\`b"`
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_prefix
+                    (assignment_word
+                      (variable_name)
+                      (assignment_value
+                        (backquote_substitution
+                          (backquote_substitution_body
+                            (complete_commands
+                              (complete_command
+                                (list
+                                  (and_or
+                                    (pipeline
+                                      (pipe_sequence
+                                        (command
+                                          (simple_command
+                                            (cmd_name
+                                              (word
+                                                (literal)))
+                                            (cmd_suffix
+                                              (word
+                                                (double_quoted
+                                                  (double_quote_text)
+                                                  (double_quote_escape)
+                                                  (double_quote_text)))))))))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+backquotes fold dollar-single-quote escapes before finding the closing quote
+==================
+
+: `: $'\\''`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (backquote_substitution
+                        body: (backquote_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (simple_command
+                                          name: (cmd_name
+                                            (word
+                                              (literal)))
+                                          suffix: (cmd_suffix
+                                            word: (word
+                                              (dollar_single_quoted
+                                                (dollar_single_quote_escape))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+backquote double-quoted tails distinguish literal and parameter brace escapes
+==================
+
+: `: "\a" "\}" "${x:-\}}"`
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (backquote_substitution
+                        (backquote_substitution_body
+                          (complete_commands
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal)))
+                                          (cmd_suffix
+                                            (word
+                                              (double_quoted
+                                                (double_quote_text)))
+                                            (word
+                                              (double_quoted
+                                                (double_quote_text)))
+                                            (word
+                                              (double_quoted
+                                                (parameter_expansion
+                                                  (variable_name)
+                                                  (parameter_value_operator)
+                                                  (parameter_word
+                                                    (double_quote_escape))))))))))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+hexadecimal quote escapes stop after two digits and octal after three
+==================
+
+: $'\x123' $'\xABCDEf' $'\1234'
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (dollar_single_quoted
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_text)))
+                    word: (word
+                      (dollar_single_quoted
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_text)))
+                    word: (word
+                      (dollar_single_quoted
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_text))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+literal line continuations
+:cst
+==================
+printf '%s\n' 'single\
+quote' $'dollar\
+quote'
+cat <<'EOF'
+quoted\
+body
+EOF
+
+------------------
+
+0:0  - 7:0    program
+0:0  - 3:11     commands: complete_commands
+0:0  - 2:6        command: complete_command
+0:0  - 2:6          body: list
+0:0  - 2:6            and_or: and_or
+0:0  - 2:6              pipeline: pipeline
+0:0  - 2:6                sequence: pipe_sequence
+0:0  - 2:6                  command: command
+0:0  - 2:6                    body: simple_command
+0:0  - 0:6                      name: cmd_name
+0:0  - 0:6                        word
+0:0  - 0:6                          literal `printf`
+0:6  - 2:6                      suffix: cmd_suffix
+0:7  - 0:13                       word: word
+0:7  - 0:13                         single_quoted
+0:7  - 0:8                            "'"
+0:8  - 0:12                           single_quote_content `%s\\n`
+0:12 - 0:13                           "'"
+0:14 - 1:6                        word: word
+0:14 - 1:6                          single_quoted
+0:14 - 0:15                           "'"
+0:15 - 1:5                            single_quote_content
+0:15 - 0:23                             `single\\\n`
+1:15 - 1:5                              `quote`
+1:5  - 1:6                            "'"
+1:7  - 2:6                        word: word
+1:7  - 2:6                          dollar_single_quoted
+1:7  - 1:8                            "$"
+1:8  - 1:9                            "'"
+1:9  - 1:15                           dollar_single_quote_text `dollar`
+1:15 - 2:0                            dollar_single_quote_escape
+1:15 - 1:17                             `\\\n`
+2:0  - 2:5                            dollar_single_quote_text `quote`
+2:5  - 2:6                            "'"
+2:6  - 3:0        separator: newline_list
+2:6  - 3:0          "\n"
+3:0  - 3:11       command: complete_command
+3:0  - 3:11         body: list
+3:0  - 3:11           and_or: and_or
+3:0  - 3:11             pipeline: pipeline
+3:0  - 3:11               sequence: pipe_sequence
+3:0  - 3:11                 command: command
+3:0  - 3:11                   body: simple_command
+3:0  - 3:3                      name: cmd_name
+3:0  - 3:3                        word
+3:0  - 3:3                          literal `cat`
+3:3  - 3:11                     suffix: cmd_suffix
+3:4  - 3:11                       redirect: io_redirect
+3:4  - 3:11                         body: io_here
+3:4  - 3:6                            operator: dless `<<`
+3:6  - 3:11                           end: here_end
+3:6  - 3:11                             word: here_end_text `'EOF'`
+3:11 - 7:0      trailing: linebreak
+3:11 - 7:0        newline_list
+3:11 - 7:0          here_document_sequence
+3:11 - 4:0            line_end: here_document_line_end
+3:11 - 3:12             `\n`
+4:0  - 7:0            document: here_document
+4:0  - 6:0              body: quoted_here_document_body
+4:0  - 4:7                quoted_here_document_text `quoted\\`
+5:0  - 5:4                quoted_here_document_text `body`
+6:0  - 7:0              end: here_document_end
+6:0  - 6:3                here_document_end_text `EOF`
+
+==================
+single quote
+:cst
+==================
+: 'ab\
+cd'
+
+------------------
+
+0:0 - 2:0   program
+0:0 - 1:3     commands: complete_commands
+0:0 - 1:3       command: complete_command
+0:0 - 1:3         body: list
+0:0 - 1:3           and_or: and_or
+0:0 - 1:3             pipeline: pipeline
+0:0 - 1:3               sequence: pipe_sequence
+0:0 - 1:3                 command: command
+0:0 - 1:3                   body: simple_command
+0:0 - 0:1                     name: cmd_name
+0:0 - 0:1                       word
+0:0 - 0:1                         literal `:`
+0:1 - 1:3                     suffix: cmd_suffix
+0:2 - 1:3                       word: word
+0:2 - 1:3                         single_quoted
+0:2 - 0:3                           "'"
+0:3 - 1:2                           single_quote_content
+0:3 - 0:7                             `ab\\\n`
+1:3 - 1:2                             `cd`
+1:2 - 1:3                           "'"
+1:3 - 2:0     trailing: linebreak
+1:3 - 2:0       newline_list
+1:3 - 2:0         "\n"
+
+==================
+dollar single quote
+:cst
+==================
+: $'ab\
+cd'
+
+------------------
+
+0:0 - 2:0   program
+0:0 - 1:3     commands: complete_commands
+0:0 - 1:3       command: complete_command
+0:0 - 1:3         body: list
+0:0 - 1:3           and_or: and_or
+0:0 - 1:3             pipeline: pipeline
+0:0 - 1:3               sequence: pipe_sequence
+0:0 - 1:3                 command: command
+0:0 - 1:3                   body: simple_command
+0:0 - 0:1                     name: cmd_name
+0:0 - 0:1                       word
+0:0 - 0:1                         literal `:`
+0:1 - 1:3                     suffix: cmd_suffix
+0:2 - 1:3                       word: word
+0:2 - 1:3                         dollar_single_quoted
+0:2 - 0:3                           "$"
+0:3 - 0:4                           "'"
+0:4 - 0:6                           dollar_single_quote_text `ab`
+0:6 - 1:0                           dollar_single_quote_escape
+0:6 - 0:8                             `\\\n`
+1:0 - 1:2                           dollar_single_quote_text `cd`
+1:2 - 1:3                           "'"
+1:3 - 2:0     trailing: linebreak
+1:3 - 2:0       newline_list
+1:3 - 2:0         "\n"
+
+==================
+unterminated double quote
+:error
+==================
+echo "open
+after
+
+------------------

@@ -1,0 +1,887 @@
+==================
+an unquoted here-document keeps its declaration and body distinct
+==================
+
+cat <<EOF
+hello $name
+EOF
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (here_document_text)
+            (parameter_expansion
+              parameter: (variable_name)))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+empty bodies and an empty quoted delimiter retain command boundaries
+==================
+
+cat <<EOF
+EOF
+cat <<''
+
+next
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))))))))))
+    separator: (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          end: (here_document_end
+            (here_document_end_text)))))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))))))))))
+    separator: (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          end: (here_document_end))))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+unquoted bodies expose nested expansions without executing them
+==================
+
+cat <<OUTER
+${value} $(printf '%s' "$other") $((1 + $count)) `printf old`
+OUTER
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (parameter_expansion
+              parameter: (variable_name))
+            (here_document_text)
+            (command_substitution
+              body: (command_substitution_body
+                (complete_commands
+                  command: (complete_command
+                    body: (list
+                      and_or: (and_or
+                        pipeline: (pipeline
+                          sequence: (pipe_sequence
+                            command: (command
+                              body: (simple_command
+                                name: (cmd_name
+                                  (word
+                                    (literal)))
+                                suffix: (cmd_suffix
+                                  word: (word
+                                    (single_quoted
+                                      (single_quote_content)))
+                                  word: (word
+                                    (double_quoted
+                                      (parameter_expansion
+                                        parameter: (variable_name)))))))))))))))
+            (here_document_text)
+            (arithmetic_expansion
+              expression: (arithmetic_source
+                (arithmetic_number)
+                (arithmetic_operator)
+                (parameter_expansion
+                  parameter: (variable_name))))
+            (here_document_text)
+            (backquote_substitution
+              body: (backquote_substitution_body
+                (complete_commands
+                  command: (complete_command
+                    body: (list
+                      and_or: (and_or
+                        pipeline: (pipeline
+                          sequence: (pipe_sequence
+                            command: (command
+                              body: (simple_command
+                                name: (cmd_name
+                                  (word
+                                    (literal)))
+                                suffix: (cmd_suffix
+                                  word: (word
+                                    (literal))))))))))))))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+unquoted body escapes retain their source roles
+==================
+
+cat <<EOF
+\$ \` \\ \q
+EOF
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (here_document_escape)
+            (here_document_text)
+            (here_document_escape)
+            (here_document_text)
+            (here_document_escape)
+            (here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+unquoted here-document bodies keep dollar-single-quote source literal
+==================
+
+cat <<EOF
+$'text'
+EOF
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text)))))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+body substitutions separate commands across body lines
+==================
+
+cat <<E
+$(a
+b)
+E
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text)))))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (command_substitution
+              (command_substitution_body
+                (complete_commands
+                  (complete_command
+                    (list
+                      (and_or
+                        (pipeline
+                          (pipe_sequence
+                            (command
+                              (simple_command
+                                (cmd_name
+                                  (word
+                                    (literal))))))))))
+                  (newline_list)
+                  (complete_command
+                    (list
+                      (and_or
+                        (pipeline
+                          (pipe_sequence
+                            (command
+                              (simple_command
+                                (cmd_name
+                                  (word
+                                    (literal))))))))))))))
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+unquoted body expansions span body lines
+==================
+
+cat <<EOF
+$((1 +
+2)) $(a
+b)
+EOF
+after
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text))))))))))))
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (arithmetic_expansion
+              (arithmetic_binary_expression
+                (arithmetic_number)
+                (arithmetic_operator)
+                (arithmetic_number)))
+            (here_document_text)
+            (command_substitution
+              (command_substitution_body
+                (complete_commands
+                  (complete_command
+                    (list
+                      (and_or
+                        (pipeline
+                          (pipe_sequence
+                            (command
+                              (simple_command
+                                (cmd_name
+                                  (word
+                                    (literal))))))))))
+                  (newline_list)
+                  (complete_command
+                    (list
+                      (and_or
+                        (pipeline
+                          (pipe_sequence
+                            (command
+                              (simple_command
+                                (cmd_name
+                                  (word
+                                    (literal))))))))))))))
+          (here_document_end
+            (here_document_end_text)))))
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+backquote body runs preserve literal dollars and ordinary tails
+==================
+
+: `cat <<EOF
+\\$x
+\q \"
+EOF
+`
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (backquote_substitution
+                        (backquote_substitution_body
+                          (complete_commands
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal)))
+                                          (cmd_suffix
+                                            (io_redirect
+                                              (io_here
+                                                (dless)
+                                                (here_end
+                                                  (here_end_text)))))))))))))
+                          (linebreak
+                            (newline_list
+                              (here_document_sequence
+                                (here_document_line_end)
+                                (here_document
+                                  (here_document_body
+                                    (here_document_escape)
+                                    (here_document_text)
+                                    (here_document_text))
+                                  (here_document_end
+                                    (here_document_end_text))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+backquote body paired escapes retain the following delimiter line
+==================
+
+: `cat <<EOF
+\\\\
+EOF
+`
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (backquote_substitution
+                        (backquote_substitution_body
+                          (complete_commands
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal)))
+                                          (cmd_suffix
+                                            (io_redirect
+                                              (io_here
+                                                (dless)
+                                                (here_end
+                                                  (here_end_text)))))))))))))
+                          (linebreak
+                            (newline_list
+                              (here_document_sequence
+                                (here_document_line_end)
+                                (here_document
+                                  (here_document_body
+                                    (here_document_escape))
+                                  (here_document_end
+                                    (here_document_end_text))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+escaped backslash pairs keep body lines closed before continuations
+==================
+
+cat <<E; f()
+x\\
+E
+{ :; }
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))))))))
+        separator: (separator_op)
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (function_definition
+                  name: (fname)
+                  linebreak: (linebreak
+                    (newline_list
+                      (here_document_sequence
+                        line_end: (here_document_line_end)
+                        document: (here_document
+                          body: (here_document_body
+                            (here_document_text)
+                            (here_document_escape))
+                          end: (here_document_end
+                            (here_document_end_text))))))
+                  body: (function_body
+                    body: (compound_command
+                      (brace_group
+                        body: (compound_list
+                          body: (term
+                            and_or: (and_or
+                              pipeline: (pipeline
+                                sequence: (pipe_sequence
+                                  command: (command
+                                    body: (simple_command
+                                      name: (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          terminator: (separator
+                            operator: (separator_op))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+unquoted body parameter words keep single quotes and tildes literal
+==================
+
+cat <<EOF
+${name:-it's} ${name:-~} ${name:-'}'}
+EOF
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (parameter_expansion
+              parameter: (variable_name)
+              operator: (parameter_value_operator)
+              word: (parameter_word
+                (double_quote_text)))
+            (here_document_text)
+            (parameter_expansion
+              parameter: (variable_name)
+              operator: (parameter_value_operator)
+              word: (parameter_word
+                (double_quote_text)))
+            (here_document_text)
+            (parameter_expansion
+              parameter: (variable_name)
+              operator: (parameter_value_operator)
+              word: (parameter_word
+                (double_quote_text)))
+            (here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+unquoted body parameter words keep double quotes, escapes and patterns special
+==================
+
+cat <<EOF
+${name:-"a } b"} ${name:-a\}b} ${name#'a'}
+EOF
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (parameter_expansion
+              parameter: (variable_name)
+              operator: (parameter_value_operator)
+              word: (parameter_word
+                (double_quoted
+                  (double_quote_text))))
+            (here_document_text)
+            (parameter_expansion
+              parameter: (variable_name)
+              operator: (parameter_value_operator)
+              word: (parameter_word
+                (double_quote_text)
+                (double_quote_escape)
+                (double_quote_text)))
+            (here_document_text)
+            (parameter_expansion
+              parameter: (variable_name)
+              operator: (parameter_pattern_operator)
+              pattern: (parameter_pattern
+                (single_quoted
+                  (single_quote_content)))))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+unquoted body backquotes remove the backslash before a double quote
+==================
+
+cat <<EOF
+`printf %s \"a  b\"`
+EOF
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (backquote_substitution
+              body: (backquote_substitution_body
+                (complete_commands
+                  command: (complete_command
+                    body: (list
+                      and_or: (and_or
+                        pipeline: (pipeline
+                          sequence: (pipe_sequence
+                            command: (command
+                              body: (simple_command
+                                name: (cmd_name
+                                  (word
+                                    (literal)))
+                                suffix: (cmd_suffix
+                                  word: (word
+                                    (literal))
+                                  word: (word
+                                    (double_quoted
+                                      (double_quote_text)))))))))))))))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+EOF terminates an unquoted body without an end node
+==================
+cat <<E
+body
+
+------------------
+
+(program commands: (complete_commands
+  command: (complete_command
+    body: (list
+      and_or: (and_or
+        pipeline: (pipeline
+          sequence: (pipe_sequence
+            command: (command
+              body: (simple_command
+                name: (cmd_name (word (literal)))
+                suffix: (cmd_suffix
+                  redirect: (io_redirect
+                    body: (io_here
+                      operator: (dless)
+                      end: (here_end word: (here_end_text))))))))))))) trailing: (linebreak (newline_list (here_document_sequence line_end: (here_document_line_end) document: (here_document body: (here_document_body (here_document_text)))))))
+
+==================
+a line continuation before EOF stays inside its document
+:cst
+==================
+cat <<E
+body
+\
+
+------------------
+
+0:0 - 3:0   program
+0:0 - 0:7     commands: complete_commands
+0:0 - 0:7       command: complete_command
+0:0 - 0:7         body: list
+0:0 - 0:7           and_or: and_or
+0:0 - 0:7             pipeline: pipeline
+0:0 - 0:7               sequence: pipe_sequence
+0:0 - 0:7                 command: command
+0:0 - 0:7                   body: simple_command
+0:0 - 0:3                     name: cmd_name
+0:0 - 0:3                       word
+0:0 - 0:3                         literal `cat`
+0:3 - 0:7                     suffix: cmd_suffix
+0:4 - 0:7                       redirect: io_redirect
+0:4 - 0:7                         body: io_here
+0:4 - 0:6                           operator: dless `<<`
+0:6 - 0:7                           end: here_end
+0:6 - 0:7                             word: here_end_text `E`
+0:7 - 3:0     trailing: linebreak
+0:7 - 3:0       newline_list
+0:7 - 3:0         here_document_sequence
+0:7 - 1:0           line_end: here_document_line_end
+0:7 - 0:8             `\n`
+1:0 - 3:0           document: here_document
+1:0 - 2:0             body: here_document_body
+1:0 - 1:4               here_document_text `body`
+2:0 - 2:1             line_continuation `\\`
+
+==================
+EOF after the declaration retains an empty document
+==================
+cat <<E
+------------------
+
+(program commands: (complete_commands
+  command: (complete_command
+    body: (list
+      and_or: (and_or
+        pipeline: (pipeline
+          sequence: (pipe_sequence
+            command: (command
+              body: (simple_command
+                name: (cmd_name (word (literal)))
+                suffix: (cmd_suffix
+                  redirect: (io_redirect
+                    body: (io_here
+                      operator: (dless)
+                      end: (here_end word: (here_end_text))))))))))))) trailing: (linebreak (newline_list (here_document_sequence document: (here_document)))))
+
+==================
+an unclosed parameter remains incomplete before a delimiter
+:error
+==================
+cat <<E
+${x:-a
+E
+
+------------------
+
+
+

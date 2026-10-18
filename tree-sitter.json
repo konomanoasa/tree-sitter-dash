@@ -1,0 +1,37 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "dash",
+      "title": "dash",
+      "scope": "source.dash",
+      "path": ".",
+      "file-types": ["dash"],
+      "injection-regex": "^dash$",
+      "highlights": "queries/highlights.scm",
+      "external-files": [
+        "src/arithmetic.h",
+        "src/input.h",
+        "src/lexical-tokens.h",
+        "src/lexical-tokens.json",
+        "src/source.h"
+      ]
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "Tree-sitter grammar for dash.",
+    "links": {
+      "repository": "https://github.com/konomanoasa/tree-sitter-dash"
+    }
+  },
+  "bindings": {
+    "c": false,
+    "go": false,
+    "node": false,
+    "python": false,
+    "rust": true,
+    "swift": false
+  }
+}

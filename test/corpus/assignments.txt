@@ -1,0 +1,475 @@
+==================
+an assignment-only simple command has no command name
+==================
+
+A= B=$value C=$(printf value)
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  prefix: (cmd_prefix
+                    assignment: (assignment_word
+                      name: (variable_name))
+                    assignment: (assignment_word
+                      name: (variable_name)
+                      value: (assignment_value
+                        (parameter_expansion
+                          parameter: (variable_name))))
+                    assignment: (assignment_word
+                      name: (variable_name)
+                      value: (assignment_value
+                        (command_substitution
+                          body: (command_substitution_body
+                            (complete_commands
+                              command: (complete_command
+                                body: (list
+                                  and_or: (and_or
+                                    pipeline: (pipeline
+                                      sequence: (pipe_sequence
+                                        command: (command
+                                          body: (simple_command
+                                            name: (cmd_name
+                                              (word
+                                                (literal)))
+                                            suffix: (cmd_suffix
+                                              word: (word
+                                                (literal))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+assignment values retain their source-word structure
+==================
+
+VALUE=pre"quoted"${name}$((1 + 2))
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  prefix: (cmd_prefix
+                    assignment: (assignment_word
+                      name: (variable_name)
+                      value: (assignment_value
+                        (literal)
+                        (double_quoted
+                          (double_quote_text))
+                        (parameter_expansion
+                          parameter: (variable_name))
+                        (arithmetic_expansion
+                          expression: (arithmetic_binary_expression
+                            left: (arithmetic_number)
+                            operator: (arithmetic_operator)
+                            right: (arithmetic_number))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+assignments can precede a command and its arguments
+==================
+
+MODE=fast EMPTY= EXTRA==value command -v operand
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  prefix: (cmd_prefix
+                    assignment: (assignment_word
+                      name: (variable_name)
+                      value: (assignment_value
+                        (literal)))
+                    assignment: (assignment_word
+                      name: (variable_name))
+                    assignment: (assignment_word
+                      name: (variable_name)
+                      value: (assignment_value
+                        (literal))))
+                  word: (cmd_word
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+reserved word spellings stay assignment values
+==================
+
+y=then
+y=a:do
+cmd x=fi
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_prefix
+                    (assignment_word
+                      (variable_name)
+                      (assignment_value
+                        (literal)))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_prefix
+                    (assignment_word
+                      (variable_name)
+                      (assignment_value
+                        (literal)))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal)))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+assignment-shaped words after the command name are arguments
+==================
+
+A=one command B=two C='three words' -x --long operand
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  prefix: (cmd_prefix
+                    assignment: (assignment_word
+                      name: (variable_name)
+                      value: (assignment_value
+                        (literal))))
+                  word: (cmd_word
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))
+                    word: (word
+                      (literal)
+                      (single_quoted
+                        (single_quote_content)))
+                    word: (word
+                      (literal))
+                    word: (word
+                      (literal))
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+assignment command and argument positions remain distinct
+==================
+
+A=-x -x --long
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  prefix: (cmd_prefix
+                    assignment: (assignment_word
+                      name: (variable_name)
+                      value: (assignment_value
+                        (literal))))
+                  word: (cmd_word
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a backquote assignment after a function remains a separate complete command
+==================
+
+worker() {
+  :
+}
+result=`printf nested`
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (brace_group
+                        (compound_list
+                          (linebreak
+                            (newline_list))
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          (separator
+                            (newline_list)))))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_prefix
+                    (assignment_word
+                      (variable_name)
+                      (assignment_value
+                        (backquote_substitution
+                          (backquote_substitution_body
+                            (complete_commands
+                              (complete_command
+                                (list
+                                  (and_or
+                                    (pipeline
+                                      (pipe_sequence
+                                        (command
+                                          (simple_command
+                                            (cmd_name
+                                              (word
+                                                (literal)))
+                                            (cmd_suffix
+                                              (word
+                                                (literal))))))))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+an empty name leaves assignment-shaped source as a command word
+==================
+
+=value argument
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a leading digit leaves assignment-shaped source as a command word
+==================
+
+1NAME=value argument
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a quoted name leaves assignment-shaped source as a command word
+==================
+
+'NAME'=value argument
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (single_quoted
+                        (single_quote_content))
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+an escaped equals sign remains command-word source
+==================
+
+NAME\=value argument
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)
+                      (escaped_character)
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+an expanded name leaves assignment-shaped source as a command word
+==================
+
+NAME${suffix}=value argument
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)
+                      (parameter_expansion
+                        parameter: (variable_name))
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))

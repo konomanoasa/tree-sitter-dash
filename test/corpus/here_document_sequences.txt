@@ -1,0 +1,822 @@
+==================
+multiple here-documents are collected in declaration order
+==================
+
+cat 3<<FIRST middle <<-SECOND >output
+first
+FIRST
+	second
+	SECOND
+next
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      number: (io_number)
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))
+                    word: (word
+                      (literal))
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dlessdash)
+                        end: (here_end
+                          word: (here_end_text))))
+                    redirect: (io_redirect
+                      body: (io_file
+                        filename: (filename
+                          word: (word
+                            (literal)))))))))))))
+    separator: (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))
+        document: (here_document
+          body: (here_document_body
+            (here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+the complete command is parsed before its here-document body
+==================
+
+cat <<EOF | tr a b && printf done
+body
+EOF
+next
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))
+                    word: (word
+                      (literal)))))))
+          operator: (and_if)
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))))))))))
+    separator: (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a here-document can occupy a pipeline linebreak
+==================
+
+cat <<EOF |
+body
+EOF
+tr a b
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))
+              (linebreak
+                (newline_list
+                  (here_document_sequence
+                    line_end: (here_document_line_end)
+                    document: (here_document
+                      body: (here_document_body
+                        (here_document_text))
+                      end: (here_document_end
+                        (here_document_end_text))))))
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a substitution newline does not start an enclosing here-document body
+==================
+
+cmd <<E $(x
+y)
+body
+E
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text))))
+                    (word
+                      (command_substitution
+                        (command_substitution_body
+                          (complete_commands
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal))))))))))
+                            (newline_list)
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal)))))))))))))))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+a backquote newline does not start an enclosing here-document body
+==================
+
+cmd <<E `x
+y`
+body
+E
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text))))
+                    (word
+                      (backquote_substitution
+                        (backquote_substitution_body
+                          (complete_commands
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal))))))))))
+                            (newline_list)
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal)))))))))))))))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+a term separator continues on the declaring line of a here-document
+==================
+
+{ cat <<E; b
+x
+E
+}
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (brace_group
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))
+                                  (cmd_suffix
+                                    (io_redirect
+                                      (io_here
+                                        (dless)
+                                        (here_end
+                                          (here_end_text))))))))))
+                        (separator
+                          (separator_op))
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      (separator
+                        (newline_list
+                          (here_document_sequence
+                            (here_document_line_end)
+                            (here_document
+                              (here_document_body
+                                (here_document_text))
+                              (here_document_end
+                                (here_document_end_text))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+an asynchronous separator collects further declarations on one line
+==================
+
+{ cat <<A & cat <<B; }
+a
+A
+b
+B
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (brace_group
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))
+                                  (cmd_suffix
+                                    (io_redirect
+                                      (io_here
+                                        (dless)
+                                        (here_end
+                                          (here_end_text))))))))))
+                        (separator
+                          (separator_op))
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))
+                                  (cmd_suffix
+                                    (io_redirect
+                                      (io_here
+                                        (dless)
+                                        (here_end
+                                          (here_end_text)))))))))))
+                      (separator
+                        (separator_op))))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+a conditional condition holds commands after a here-document separator
+==================
+
+if cat <<E; b; then :; fi
+x
+E
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (if_clause
+                    (if_keyword)
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))
+                                  (cmd_suffix
+                                    (io_redirect
+                                      (io_here
+                                        (dless)
+                                        (here_end
+                                          (here_end_text))))))))))
+                        (separator
+                          (separator_op))
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      (separator
+                        (separator_op)))
+                    (then_keyword)
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      (separator
+                        (separator_op)))
+                    (fi_keyword))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+a case item body continues after a here-document separator
+==================
+
+case x in a) cat <<E; b;; esac
+x
+E
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (case_clause
+                    (case_keyword)
+                    (word
+                      (literal))
+                    (in
+                      (in_keyword))
+                    (case_list
+                      (case_item
+                        (pattern_list
+                          (word
+                            (literal)))
+                        (compound_list
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))
+                                      (cmd_suffix
+                                        (io_redirect
+                                          (io_here
+                                            (dless)
+                                            (here_end
+                                              (here_end_text))))))))))
+                            (separator
+                              (separator_op))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal))))))))))
+                        (dsemi)))
+                    (esac_keyword))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+an escaped word begins a command after a here-document separator
+==================
+
+{ cat <<E; \b; }
+x
+E
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (brace_group
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))
+                                  (cmd_suffix
+                                    (io_redirect
+                                      (io_here
+                                        (dless)
+                                        (here_end
+                                          (here_end_text))))))))))
+                        (separator
+                          (separator_op))
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (escaped_character)))))))))
+                      (separator
+                        (separator_op))))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+a trailing blank stays with its here-document sequence
+==================
+
+cat <<END 
+body
+END
+second
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))))))))))
+    separator: (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+here backquote final
+==================
+cmd <<E `x
+y`
+body
+E
+
+------------------
+
+(program
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text))))
+                    (word
+                      (backquote_substitution
+                        (backquote_substitution_body
+                          (complete_commands
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal))))))))))
+                            (newline_list)
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal)))))))))))))))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+a stripped tab line before EOF belongs to the earlier document
+:cst
+==================
+cat <<-X <<E
+	
+------------------
+
+0:0  - 1:1    program
+0:0  - 0:12     commands: complete_commands
+0:0  - 0:12       command: complete_command
+0:0  - 0:12         body: list
+0:0  - 0:12           and_or: and_or
+0:0  - 0:12             pipeline: pipeline
+0:0  - 0:12               sequence: pipe_sequence
+0:0  - 0:12                 command: command
+0:0  - 0:12                   body: simple_command
+0:0  - 0:3                      name: cmd_name
+0:0  - 0:3                        word
+0:0  - 0:3                          literal `cat`
+0:3  - 0:12                     suffix: cmd_suffix
+0:4  - 0:8                        redirect: io_redirect
+0:4  - 0:8                          body: io_here
+0:4  - 0:7                            operator: dlessdash `<<-`
+0:7  - 0:8                            end: here_end
+0:7  - 0:8                              word: here_end_text `X`
+0:9  - 0:12                       redirect: io_redirect
+0:9  - 0:12                         body: io_here
+0:9  - 0:11                           operator: dless `<<`
+0:11 - 0:12                           end: here_end
+0:11 - 0:12                             word: here_end_text `E`
+0:12 - 1:1      trailing: linebreak
+0:12 - 1:1        newline_list
+0:12 - 1:1          here_document_sequence
+0:12 - 1:0            line_end: here_document_line_end
+0:12 - 0:13             `\n`
+1:0  - 1:1            document: here_document `\t`
+1:1  - 1:1            document: here_document

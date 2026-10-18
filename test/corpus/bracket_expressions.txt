@@ -1,0 +1,3449 @@
+==================
+chained bracket ranges consume endpoints from left to right
+==================
+
+printf [a-c-e] [a-b--]
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_range_source
+                            start: (pattern_bracket_character_source)
+                            operator: (pattern_bracket_range_operator_source)
+                            end: (pattern_bracket_character_source))
+                          member: (pattern_bracket_hyphen_source)
+                          member: (pattern_bracket_character_source))))
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_range_source
+                            start: (pattern_bracket_character_source)
+                            operator: (pattern_bracket_range_operator_source)
+                            end: (pattern_bracket_character_source))
+                          member: (pattern_bracket_hyphen_source)
+                          member: (pattern_bracket_hyphen_source)))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+hyphen can be either endpoint of a bracket range
+==================
+
+printf [%--] [--@]
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_range_source
+                            start: (pattern_bracket_character_source)
+                            operator: (pattern_bracket_range_operator_source)
+                            end: (pattern_bracket_hyphen_source)))))
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_range_source
+                            start: (pattern_bracket_hyphen_source)
+                            operator: (pattern_bracket_range_operator_source)
+                            end: (pattern_bracket_character_source))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+initial negation outranks ranges and braces stay members
+==================
+
+printf [!-a] [!-] [!!-a] [{] [}] ${v#[)]}
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (pattern_bracket_source
+                        negation: (pattern_bracket_negation_source)
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_hyphen_source)
+                          member: (pattern_bracket_character_source))))
+                    word: (word
+                      (pattern_bracket_source
+                        negation: (pattern_bracket_negation_source)
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_hyphen_source))))
+                    word: (word
+                      (pattern_bracket_source
+                        negation: (pattern_bracket_negation_source)
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_range_source
+                            start: (pattern_bracket_character_source)
+                            operator: (pattern_bracket_range_operator_source)
+                            end: (pattern_bracket_character_source)))))
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_character_source))))
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_character_source))))
+                    word: (word
+                      (parameter_expansion
+                        parameter: (variable_name)
+                        operator: (parameter_pattern_operator)
+                        pattern: (parameter_pattern
+                          (pattern_bracket_source
+                            members: (pattern_bracket_members_source
+                              member: (pattern_bracket_character_source)))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a dollar sign that opens no expansion is a bracket member
+==================
+
+printf [a$] [$] [!$] [$=] [a-$] ${x#[a$]}
+case x in [a$]) ;; esac
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_character_source)
+                          member: (pattern_bracket_character_source))))
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_character_source))))
+                    word: (word
+                      (pattern_bracket_source
+                        negation: (pattern_bracket_negation_source)
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_character_source))))
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_character_source)
+                          member: (pattern_bracket_character_source))))
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_range_source
+                            start: (pattern_bracket_character_source)
+                            operator: (pattern_bracket_range_operator_source)
+                            end: (pattern_bracket_character_source)))))
+                    word: (word
+                      (parameter_expansion
+                        parameter: (variable_name)
+                        operator: (parameter_pattern_operator)
+                        pattern: (parameter_pattern
+                          (pattern_bracket_source
+                            members: (pattern_bracket_members_source
+                              member: (pattern_bracket_character_source)
+                              member: (pattern_bracket_character_source))))))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (case_clause
+                    (case_keyword)
+                    word: (word
+                      (literal))
+                    in: (in
+                      (in_keyword))
+                    items: (case_list
+                      item: (case_item
+                        patterns: (pattern_list
+                          word: (word
+                            (pattern_bracket_source
+                              members: (pattern_bracket_members_source
+                                member: (pattern_bracket_character_source)
+                                member: (pattern_bracket_character_source)))))
+                        terminator: (dsemi)))
+                    (esac_keyword))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+quoted and escaped bracket members retain quote source
+==================
+
+printf [a\]b] [a"-"z]
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_character_source)
+                          member: (escaped_character)
+                          member: (pattern_bracket_character_source))))
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (pattern_bracket_character_source)
+                          member: (double_quoted
+                            (double_quote_text))
+                          member: (pattern_bracket_character_source)))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+bracket source is stable across WORD grammar positions
+==================
+
+[abc]
+value=[abc] [abc] [abc] >[abc]
+for item in [abc]; do :; done
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (pattern_bracket_source
+                        (pattern_bracket_members_source
+                          (pattern_bracket_character_source)
+                          (pattern_bracket_character_source)
+                          (pattern_bracket_character_source))))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_prefix
+                    (assignment_word
+                      (variable_name)
+                      (assignment_value
+                        (pattern_bracket_source
+                          (pattern_bracket_members_source
+                            (pattern_bracket_character_source)
+                            (pattern_bracket_character_source)
+                            (pattern_bracket_character_source))))))
+                  (cmd_word
+                    (word
+                      (pattern_bracket_source
+                        (pattern_bracket_members_source
+                          (pattern_bracket_character_source)
+                          (pattern_bracket_character_source)
+                          (pattern_bracket_character_source)))))
+                  (cmd_suffix
+                    (word
+                      (pattern_bracket_source
+                        (pattern_bracket_members_source
+                          (pattern_bracket_character_source)
+                          (pattern_bracket_character_source)
+                          (pattern_bracket_character_source))))
+                    (io_redirect
+                      (io_file
+                        (filename
+                          (word
+                            (pattern_bracket_source
+                              (pattern_bracket_members_source
+                                (pattern_bracket_character_source)
+                                (pattern_bracket_character_source)
+                                (pattern_bracket_character_source)))))))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (for_clause
+                    (for_keyword)
+                    (name)
+                    (in
+                      (in_keyword))
+                    (wordlist
+                      (word
+                        (pattern_bracket_source
+                          (pattern_bracket_members_source
+                            (pattern_bracket_character_source)
+                            (pattern_bracket_character_source)
+                            (pattern_bracket_character_source)))))
+                    (sequential_sep)
+                    (do_group
+                      (do_keyword)
+                      (compound_list
+                        (term
+                          (and_or
+                            (pipeline
+                              (pipe_sequence
+                                (command
+                                  (simple_command
+                                    (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        (separator
+                          (separator_op)))
+                      (done_keyword)))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+bracket expressions delegate nested command syntax to the grammar
+==================
+
+printf [$(case x in x) printf ok ;; esac)] "${value#[${other#(}]}"
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (pattern_bracket_source
+                        (pattern_bracket_members_source
+                          (command_substitution
+                            (command_substitution_body
+                              (complete_commands
+                                (complete_command
+                                  (list
+                                    (and_or
+                                      (pipeline
+                                        (pipe_sequence
+                                          (command
+                                            (compound_command
+                                              (case_clause
+                                                (case_keyword)
+                                                (word
+                                                  (literal))
+                                                (in
+                                                  (in_keyword))
+                                                (case_list
+                                                  (case_item
+                                                    (pattern_list
+                                                      (word
+                                                        (literal)))
+                                                    (compound_list
+                                                      (term
+                                                        (and_or
+                                                          (pipeline
+                                                            (pipe_sequence
+                                                              (command
+                                                                (simple_command
+                                                                  (cmd_name
+                                                                    (word
+                                                                      (literal)))
+                                                                  (cmd_suffix
+                                                                    (word
+                                                                      (literal))))))))))
+                                                    (dsemi)))
+                                                (esac_keyword)))))))))))))))
+                    (word
+                      (double_quoted
+                        (parameter_expansion
+                          (variable_name)
+                          (parameter_pattern_operator)
+                          (parameter_pattern
+                            (pattern_bracket_source
+                              (pattern_bracket_members_source
+                                (parameter_expansion
+                                  (variable_name)
+                                  (parameter_pattern_operator)
+                                  (parameter_pattern
+                                    (literal))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+here-document parameter brackets include raw newline members
+==================
+
+cat <<END
+${x#[a
+b]}
+END
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (parameter_expansion
+              parameter: (variable_name)
+              operator: (parameter_pattern_operator)
+              pattern: (parameter_pattern
+                (pattern_bracket_source
+                  members: (pattern_bracket_members_source
+                    member: (pattern_bracket_character_source)
+                    member: (pattern_bracket_character_source)
+                    member: (pattern_bracket_character_source))))))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+backquote bracket escape members retain range endpoints
+==================
+
+: `: [0-\\\\z] [\\\\-z] [0-\\\\\\\\z]`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (backquote_substitution
+                        body: (backquote_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (simple_command
+                                          name: (cmd_name
+                                            (word
+                                              (literal)))
+                                          suffix: (cmd_suffix
+                                            word: (word
+                                              (pattern_bracket_source
+                                                members: (pattern_bracket_members_source
+                                                  member: (pattern_bracket_range_source
+                                                    start: (pattern_bracket_character_source)
+                                                    operator: (pattern_bracket_range_operator_source)
+                                                    end: (escaped_character))
+                                                  member: (pattern_bracket_character_source))))
+                                            word: (word
+                                              (pattern_bracket_source
+                                                members: (pattern_bracket_members_source
+                                                  member: (pattern_bracket_range_source
+                                                    start: (escaped_character)
+                                                    operator: (pattern_bracket_range_operator_source)
+                                                    end: (pattern_bracket_character_source)))))
+                                            word: (word
+                                              (pattern_bracket_source
+                                                members: (pattern_bracket_members_source
+                                                  member: (pattern_bracket_range_source
+                                                    start: (pattern_bracket_character_source)
+                                                    operator: (pattern_bracket_range_operator_source)
+                                                    end: (escaped_character))
+                                                  member: (escaped_character)
+                                                  member: (pattern_bracket_character_source)))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+nested bracket members in quoted backquotes keep their own closers
+==================
+
+: "`: [\"\$(printf \"]\")\"] [\${x:-\"]\"}] [\`printf \"]\"\`]`"
+: "`: \"\`: [\\\"]\\\" [\\\`printf \\\"]\\\"\\\`]\`\"`"
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (double_quoted
+                        (backquote_substitution
+                          body: (backquote_substitution_body
+                            (complete_commands
+                              command: (complete_command
+                                body: (list
+                                  and_or: (and_or
+                                    pipeline: (pipeline
+                                      sequence: (pipe_sequence
+                                        command: (command
+                                          body: (simple_command
+                                            name: (cmd_name
+                                              (word
+                                                (literal)))
+                                            suffix: (cmd_suffix
+                                              word: (word
+                                                (pattern_bracket_source
+                                                  members: (pattern_bracket_members_source
+                                                    member: (double_quoted
+                                                      (command_substitution
+                                                        body: (command_substitution_body
+                                                          (complete_commands
+                                                            command: (complete_command
+                                                              body: (list
+                                                                and_or: (and_or
+                                                                  pipeline: (pipeline
+                                                                    sequence: (pipe_sequence
+                                                                      command: (command
+                                                                        body: (simple_command
+                                                                          name: (cmd_name
+                                                                            (word
+                                                                              (literal)))
+                                                                          suffix: (cmd_suffix
+                                                                            word: (word
+                                                                              (double_quoted
+                                                                                (double_quote_text))))))))))))))))))
+                                              word: (word
+                                                (pattern_bracket_source
+                                                  members: (pattern_bracket_members_source
+                                                    member: (parameter_expansion
+                                                      parameter: (variable_name)
+                                                      operator: (parameter_value_operator)
+                                                      word: (parameter_word
+                                                        (double_quoted
+                                                          (double_quote_text)))))))
+                                              word: (word
+                                                (pattern_bracket_source
+                                                  members: (pattern_bracket_members_source
+                                                    member: (backquote_substitution
+                                                      body: (backquote_substitution_body
+                                                        (complete_commands
+                                                          command: (complete_command
+                                                            body: (list
+                                                              and_or: (and_or
+                                                                pipeline: (pipeline
+                                                                  sequence: (pipe_sequence
+                                                                    command: (command
+                                                                      body: (simple_command
+                                                                        name: (cmd_name
+                                                                          (word
+                                                                            (literal)))
+                                                                        suffix: (cmd_suffix
+                                                                          word: (word
+                                                                            (double_quoted
+                                                                              (double_quote_text))))))))))))))))))))))))))))))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (double_quoted
+                        (backquote_substitution
+                          body: (backquote_substitution_body
+                            (complete_commands
+                              command: (complete_command
+                                body: (list
+                                  and_or: (and_or
+                                    pipeline: (pipeline
+                                      sequence: (pipe_sequence
+                                        command: (command
+                                          body: (simple_command
+                                            name: (cmd_name
+                                              (word
+                                                (literal)))
+                                            suffix: (cmd_suffix
+                                              word: (word
+                                                (double_quoted
+                                                  (backquote_substitution
+                                                    body: (backquote_substitution_body
+                                                      (complete_commands
+                                                        command: (complete_command
+                                                          body: (list
+                                                            and_or: (and_or
+                                                              pipeline: (pipeline
+                                                                sequence: (pipe_sequence
+                                                                  command: (command
+                                                                    body: (simple_command
+                                                                      name: (cmd_name
+                                                                        (word
+                                                                          (literal)))
+                                                                      suffix: (cmd_suffix
+                                                                        word: (word
+                                                                          (literal)
+                                                                          (double_quoted
+                                                                            (double_quote_text)))
+                                                                        word: (word
+                                                                          (pattern_bracket_source
+                                                                            members: (pattern_bracket_members_source
+                                                                              member: (backquote_substitution
+                                                                                body: (backquote_substitution_body
+                                                                                  (complete_commands
+                                                                                    command: (complete_command
+                                                                                      body: (list
+                                                                                        and_or: (and_or
+                                                                                          pipeline: (pipeline
+                                                                                            sequence: (pipe_sequence
+                                                                                              command: (command
+                                                                                                body: (simple_command
+                                                                                                  name: (cmd_name
+                                                                                                    (word
+                                                                                                      (literal)))
+                                                                                                  suffix: (cmd_suffix
+                                                                                                    word: (word
+                                                                                                      (double_quoted
+                                                                                                        (double_quote_text))))))))))))))))))))))))))))))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+dollar-single-quoted apostrophes do not expose quoted bracket closers
+==================
+
+: [$'\']' [$'\']'] ${x#[$'\']'} ${x#[$'\']']}
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal)
+                      (dollar_single_quoted
+                        (dollar_single_quote_escape)
+                        (dollar_single_quote_text)))
+                    (word
+                      (pattern_bracket_source
+                        (pattern_bracket_members_source
+                          (dollar_single_quoted
+                            (dollar_single_quote_escape)
+                            (dollar_single_quote_text)))))
+                    (word
+                      (parameter_expansion
+                        (variable_name)
+                        (parameter_pattern_operator)
+                        (parameter_pattern
+                          (literal)
+                          (dollar_single_quoted
+                            (dollar_single_quote_escape)
+                            (dollar_single_quote_text)))))
+                    (word
+                      (parameter_expansion
+                        (variable_name)
+                        (parameter_pattern_operator)
+                        (parameter_pattern
+                          (pattern_bracket_source
+                            (pattern_bracket_members_source
+                              (dollar_single_quoted
+                                (dollar_single_quote_escape)
+                                (dollar_single_quote_text))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+quoted backquote bracket lookahead respects folded double quotes
+==================
+
+: "`: [\"]\" [\"]\"] \${x#[\"]\"}; case x in [\"]\") :;; esac`"
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (double_quoted
+                        (backquote_substitution
+                          body: (backquote_substitution_body
+                            (complete_commands
+                              command: (complete_command
+                                body: (list
+                                  and_or: (and_or
+                                    pipeline: (pipeline
+                                      sequence: (pipe_sequence
+                                        command: (command
+                                          body: (simple_command
+                                            name: (cmd_name
+                                              (word
+                                                (literal)))
+                                            suffix: (cmd_suffix
+                                              word: (word
+                                                (literal)
+                                                (double_quoted
+                                                  (double_quote_text)))
+                                              word: (word
+                                                (pattern_bracket_source
+                                                  members: (pattern_bracket_members_source
+                                                    member: (double_quoted
+                                                      (double_quote_text)))))
+                                              word: (word
+                                                (parameter_expansion
+                                                  parameter: (variable_name)
+                                                  operator: (parameter_pattern_operator)
+                                                  pattern: (parameter_pattern
+                                                    (literal)
+                                                    (double_quoted
+                                                      (double_quote_text)))))))))))
+                                  separator: (separator_op)
+                                  and_or: (and_or
+                                    pipeline: (pipeline
+                                      sequence: (pipe_sequence
+                                        command: (command
+                                          body: (compound_command
+                                            (case_clause
+                                              (case_keyword)
+                                              word: (word
+                                                (literal))
+                                              in: (in
+                                                (in_keyword))
+                                              items: (case_list
+                                                item: (case_item
+                                                  patterns: (pattern_list
+                                                    word: (word
+                                                      (literal)
+                                                      (double_quoted
+                                                        (double_quote_text))))
+                                                  body: (compound_list
+                                                    body: (term
+                                                      and_or: (and_or
+                                                        pipeline: (pipeline
+                                                          sequence: (pipe_sequence
+                                                            command: (command
+                                                              body: (simple_command
+                                                                name: (cmd_name
+                                                                  (word
+                                                                    (literal))))))))))
+                                                  terminator: (dsemi)))
+                                              (esac_keyword)))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+bracket lookahead folds an embedded here-document delimiter inside backquotes
+==================
+
+: `: [$(cat <<\\X
+]
+X
+)]`
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (backquote_substitution
+                        (backquote_substitution_body
+                          (complete_commands
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal)))
+                                          (cmd_suffix
+                                            (word
+                                              (pattern_bracket_source
+                                                (pattern_bracket_members_source
+                                                  (command_substitution
+                                                    (command_substitution_body
+                                                      (complete_commands
+                                                        (complete_command
+                                                          (list
+                                                            (and_or
+                                                              (pipeline
+                                                                (pipe_sequence
+                                                                  (command
+                                                                    (simple_command
+                                                                      (cmd_name
+                                                                        (word
+                                                                          (literal)))
+                                                                      (cmd_suffix
+                                                                        (io_redirect
+                                                                          (io_here
+                                                                            (dless)
+                                                                            (here_end
+                                                                              (here_end_text)))))))))))))
+                                                      (linebreak
+                                                        (newline_list
+                                                          (here_document_sequence
+                                                            (here_document_line_end)
+                                                            (here_document
+                                                              (quoted_here_document_body
+                                                                (quoted_here_document_text))
+                                                              (here_document_end
+                                                                (here_document_end_text))))))))))))))))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+folded backslashes expose a bracket range parameter endpoint
+==================
+
+echo `echo \`echo [a-\\$x]\``
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (backquote_substitution
+                        (backquote_substitution_body
+                          (complete_commands
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal)))
+                                          (cmd_suffix
+                                            (word
+                                              (backquote_substitution
+                                                (backquote_substitution_body
+                                                  (complete_commands
+                                                    (complete_command
+                                                      (list
+                                                        (and_or
+                                                          (pipeline
+                                                            (pipe_sequence
+                                                              (command
+                                                                (simple_command
+                                                                  (cmd_name
+                                                                    (word
+                                                                      (literal)))
+                                                                  (cmd_suffix
+                                                                    (word
+                                                                      (pattern_bracket_source
+                                                                        (pattern_bracket_members_source
+                                                                          (pattern_bracket_range_source
+                                                                            (pattern_bracket_character_source)
+                                                                            (pattern_bracket_range_operator_source)
+                                                                            (parameter_expansion
+                                                                              (variable_name)))))))))))))))))))))))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+nested command starts preserve bracket source around case patterns
+==================
+
+: [$(: $(case x in x) :;; esac))]
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (command_substitution
+                            body: (command_substitution_body
+                              (complete_commands
+                                command: (complete_command
+                                  body: (list
+                                    and_or: (and_or
+                                      pipeline: (pipeline
+                                        sequence: (pipe_sequence
+                                          command: (command
+                                            body: (simple_command
+                                              name: (cmd_name
+                                                (word
+                                                  (literal)))
+                                              suffix: (cmd_suffix
+                                                word: (word
+                                                  (command_substitution
+                                                    body: (command_substitution_body
+                                                      (complete_commands
+                                                        command: (complete_command
+                                                          body: (list
+                                                            and_or: (and_or
+                                                              pipeline: (pipeline
+                                                                sequence: (pipe_sequence
+                                                                  command: (command
+                                                                    body: (compound_command
+                                                                      (case_clause
+                                                                        (case_keyword)
+                                                                        word: (word
+                                                                          (literal))
+                                                                        in: (in
+                                                                          (in_keyword))
+                                                                        items: (case_list
+                                                                          item: (case_item
+                                                                            patterns: (pattern_list
+                                                                              word: (word
+                                                                                (literal)))
+                                                                            body: (compound_list
+                                                                              body: (term
+                                                                                and_or: (and_or
+                                                                                  pipeline: (pipeline
+                                                                                    sequence: (pipe_sequence
+                                                                                      command: (command
+                                                                                        body: (simple_command
+                                                                                          name: (cmd_name
+                                                                                            (word
+                                                                                              (literal))))))))))
+                                                                            terminator: (dsemi)))
+                                                                        (esac_keyword))))))))))))))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+function body starts preserve bracket source around case patterns
+==================
+
+: [$(f() case x in x) :;; esac)]
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (pattern_bracket_source
+                        members: (pattern_bracket_members_source
+                          member: (command_substitution
+                            body: (command_substitution_body
+                              (complete_commands
+                                command: (complete_command
+                                  body: (list
+                                    and_or: (and_or
+                                      pipeline: (pipeline
+                                        sequence: (pipe_sequence
+                                          command: (command
+                                            body: (function_definition
+                                              name: (fname)
+                                              body: (function_body
+                                                body: (compound_command
+                                                  (case_clause
+                                                    (case_keyword)
+                                                    word: (word
+                                                      (literal))
+                                                    in: (in
+                                                      (in_keyword))
+                                                    items: (case_list
+                                                      item: (case_item
+                                                        patterns: (pattern_list
+                                                          word: (word
+                                                            (literal)))
+                                                        body: (compound_list
+                                                          body: (term
+                                                            and_or: (and_or
+                                                              pipeline: (pipeline
+                                                                sequence: (pipe_sequence
+                                                                  command: (command
+                                                                    body: (simple_command
+                                                                      name: (cmd_name
+                                                                        (word
+                                                                          (literal))))))))))
+                                                        terminator: (dsemi)))
+                                                    (esac_keyword))))))))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+enclosing backquote escape runs fold before a bracket close scan
+==================
+
+echo `echo [\\] [\\\] [\\\a] [\\\-a]`
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (backquote_substitution
+                        (backquote_substitution_body
+                          (complete_commands
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (literal)))
+                                          (cmd_suffix
+                                            (word
+                                              (literal)
+                                              (escaped_character))
+                                            (word
+                                              (pattern_bracket_source
+                                                (pattern_bracket_members_source
+                                                  (escaped_character))))
+                                            (word
+                                              (pattern_bracket_source
+                                                (pattern_bracket_members_source
+                                                  (escaped_character)
+                                                  (pattern_bracket_character_source))))
+                                            (word
+                                              (pattern_bracket_source
+                                                (pattern_bracket_members_source
+                                                  (pattern_bracket_range_source
+                                                    (escaped_character)
+                                                    (pattern_bracket_range_operator_source)
+                                                    (pattern_bracket_character_source))))))))))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+escapes after a nested bracket or class marker stay members
+==================
+
+printf [[\a] [[\a [[:alpha:\]] ${x%[[:alpha:\]]}
+
+------------------
+
+(program leading: (linebreak (newline_list)) commands: (complete_commands command: (complete_command body: (list and_or: (and_or pipeline: (pipeline sequence: (pipe_sequence command: (command body: (simple_command name: (cmd_name (word (literal))) suffix: (cmd_suffix word: (word (pattern_bracket_source members: (pattern_bracket_members_source member: (pattern_bracket_character_source) member: (escaped_character)))) word: (word (literal) (escaped_character)) word: (word (pattern_bracket_source members: (pattern_bracket_members_source member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (escaped_character)))) word: (word (parameter_expansion parameter: (variable_name) operator: (parameter_pattern_operator) pattern: (parameter_pattern (pattern_bracket_source members: (pattern_bracket_members_source member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (escaped_character))))))))))))))) trailing: (linebreak (newline_list)))
+
+==================
+an incomplete parameter bracket stops at the expansion boundary
+==================
+
+printf ${value#[}suffix]
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (parameter_expansion
+                        parameter: (variable_name)
+                        operator: (parameter_pattern_operator)
+                        pattern: (parameter_pattern
+                          (literal)))
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+incomplete bracket expressions remain literal source
+==================
+
+printf [ [abc [] [!
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))
+                    word: (word
+                      (literal))
+                    word: (word
+                      (literal))
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+incomplete bracket openers remain distinct before structured source
+==================
+
+printf [abc'x' [abc"$x" [abc\q [abc$x
+printf "${value#[abc'x'}"
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal)
+                      (single_quoted
+                        (single_quote_content)))
+                    (word
+                      (literal)
+                      (double_quoted
+                        (parameter_expansion
+                          (variable_name))))
+                    (word
+                      (literal)
+                      (escaped_character))
+                    (word
+                      (literal)
+                      (parameter_expansion
+                        (variable_name)))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (double_quoted
+                        (parameter_expansion
+                          (variable_name)
+                          (parameter_pattern_operator)
+                          (parameter_pattern
+                            (literal)
+                            (single_quoted
+                              (single_quote_content)))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+pattern operators remain source after an incomplete bracket opener
+==================
+
+echo [* [?
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal)
+                      (pattern_star_source))
+                    (word
+                      (literal)
+                      (pattern_question_source)))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+a shell operator delimits an incomplete bracket word
+==================
+
+echo [;]
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal))))))))
+        (separator_op)
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+incomplete bracket literals keep slashes
+==================
+
+printf [a/b ${v#[a/b}
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))
+                    word: (word
+                      (parameter_expansion
+                        parameter: (variable_name)
+                        operator: (parameter_pattern_operator)
+                        pattern: (parameter_pattern
+                          (literal)))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+assignment bracket fallback preserves source ownership
+==================
+
+incomplete=[[.
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_prefix
+                    (assignment_word
+                      (variable_name)
+                      (assignment_value
+                        (literal))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+parameter pattern bracket fallback preserves source ownership
+==================
+
+printf "${value#[[.}" "${value#[x[: a]}"
+
+------------------
+
+(program leading: (linebreak (newline_list)) commands: (complete_commands command: (complete_command body: (list and_or: (and_or pipeline: (pipeline sequence: (pipe_sequence command: (command body: (simple_command name: (cmd_name (word (literal))) suffix: (cmd_suffix word: (word (double_quoted (parameter_expansion parameter: (variable_name) operator: (parameter_pattern_operator) pattern: (parameter_pattern (literal))))) word: (word (double_quoted (parameter_expansion parameter: (variable_name) operator: (parameter_pattern_operator) pattern: (parameter_pattern (pattern_bracket_source members: (pattern_bracket_members_source member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source)))))))))))))))) trailing: (linebreak (newline_list)))
+
+==================
+bracket fallback preserves completed suffixes in words
+==================
+
+printf []] [[. [[= [[: [][.] [[:alpha:] [a[.] [![.]
+
+------------------
+
+(program (linebreak (newline_list)) (complete_commands (complete_command (list (and_or (pipeline (pipe_sequence (command (simple_command (cmd_name (word (literal))) (cmd_suffix (word (pattern_bracket_source (pattern_bracket_members_source (pattern_bracket_character_source)))) (word (literal)) (word (literal)) (word (literal)) (word (pattern_bracket_source (pattern_bracket_members_source (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source)))) (word (literal) (pattern_bracket_source (pattern_bracket_members_source (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source)))) (word (pattern_bracket_source (pattern_bracket_members_source (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source)))) (word (pattern_bracket_source (pattern_bracket_negation_source) (pattern_bracket_members_source (pattern_bracket_character_source) (pattern_bracket_character_source))))))))))))) (linebreak (newline_list)))
+
+==================
+structured unclosed brackets remain source words and preserve later commands
+==================
+
+printf [a${value}suffix
+after
+printf [[:${class}:]suffix
+after_again
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal)
+                      (parameter_expansion
+                        (variable_name))
+                      (literal))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal)
+                      (pattern_bracket_source
+                        (pattern_bracket_members_source
+                          (pattern_bracket_character_source)
+                          (parameter_expansion
+                            (variable_name))
+                          (pattern_bracket_character_source)))
+                      (literal))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+an incomplete bracket prefix preserves operators and a completed suffix
+==================
+
+printf [a"x"*[.]
+
+------------------
+
+(program (linebreak (newline_list)) (complete_commands (complete_command (list (and_or (pipeline (pipe_sequence (command (simple_command (cmd_name (word (literal))) (cmd_suffix (word (pattern_bracket_source (pattern_bracket_members_source (pattern_bracket_character_source) (double_quoted (double_quote_text)) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source))))))))))))) (linebreak (newline_list)))
+
+==================
+consecutive incomplete bracket openers remain literal source
+==================
+
+echo [[abc [*[abc "${value#[[abc}" "${value#[*[abc}"
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal))
+                    (word
+                      (literal)
+                      (pattern_star_source)
+                      (literal))
+                    (word
+                      (double_quoted
+                        (parameter_expansion
+                          (variable_name)
+                          (parameter_pattern_operator)
+                          (parameter_pattern
+                            (literal)))))
+                    (word
+                      (double_quoted
+                        (parameter_expansion
+                          (variable_name)
+                          (parameter_pattern_operator)
+                          (parameter_pattern
+                            (literal)
+                            (pattern_star_source)
+                            (literal))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+an incomplete outer bracket preserves completed suffix brackets
+==================
+
+printf [[:alpha:] [[.ch.] [[=a=] "${value#[[:alpha:]}"
+
+------------------
+
+(program (linebreak (newline_list)) (complete_commands (complete_command (list (and_or (pipeline (pipe_sequence (command (simple_command (cmd_name (word (literal))) (cmd_suffix (word (literal) (pattern_bracket_source (pattern_bracket_members_source (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source)))) (word (pattern_bracket_source (pattern_bracket_members_source (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source)))) (word (pattern_bracket_source (pattern_bracket_members_source (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source)))) (word (double_quoted (parameter_expansion (variable_name) (parameter_pattern_operator) (parameter_pattern (literal) (pattern_bracket_source (pattern_bracket_members_source (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source) (pattern_bracket_character_source)))))))))))))))) (linebreak (newline_list)))
+
+==================
+the leftmost complete bracket follows an incomplete opener
+==================
+
+printf [[:[]] [x[:y][[]a] "${value#[[.[]]}"
+
+------------------
+
+(program leading: (linebreak (newline_list)) commands: (complete_commands command: (complete_command body: (list and_or: (and_or pipeline: (pipeline sequence: (pipe_sequence command: (command body: (simple_command name: (cmd_name (word (literal))) suffix: (cmd_suffix word: (word (pattern_bracket_source members: (pattern_bracket_members_source member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source))) (literal)) word: (word (pattern_bracket_source members: (pattern_bracket_members_source member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source))) (pattern_bracket_source members: (pattern_bracket_members_source member: (pattern_bracket_character_source))) (literal)) word: (word (double_quoted (parameter_expansion parameter: (variable_name) operator: (parameter_pattern_operator) pattern: (parameter_pattern (pattern_bracket_source members: (pattern_bracket_members_source member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source))) (literal)))))))))))))) trailing: (linebreak (newline_list)))
+
+==================
+character-class source content retains colons before its terminator
+==================
+
+x=[[:a::]]
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_prefix
+                    (assignment_word
+                      (variable_name)
+                      (assignment_value
+                        (pattern_bracket_source
+                          (pattern_bracket_members_source
+                            (pattern_character_class_source
+                              (pattern_character_class_content_source)))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+an incomplete bracket ends at a nested backquote closer
+==================
+
+echo `\`echo [a\``
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (backquote_substitution
+                        (backquote_substitution_body
+                          (complete_commands
+                            (complete_command
+                              (list
+                                (and_or
+                                  (pipeline
+                                    (pipe_sequence
+                                      (command
+                                        (simple_command
+                                          (cmd_name
+                                            (word
+                                              (backquote_substitution
+                                                (backquote_substitution_body
+                                                  (complete_commands
+                                                    (complete_command
+                                                      (list
+                                                        (and_or
+                                                          (pipeline
+                                                            (pipe_sequence
+                                                              (command
+                                                                (simple_command
+                                                                  (cmd_name
+                                                                    (word
+                                                                      (literal)))
+                                                                  (cmd_suffix
+                                                                    (word
+                                                                      (literal)))))))))))))))))))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+bracket dollar
+:cst
+==================
+: `: [\$]`
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:10     commands: complete_commands
+0:0  - 0:10       command: complete_command
+0:0  - 0:10         body: list
+0:0  - 0:10           and_or: and_or
+0:0  - 0:10             pipeline: pipeline
+0:0  - 0:10               sequence: pipe_sequence
+0:0  - 0:10                 command: command
+0:0  - 0:10                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:10                     suffix: cmd_suffix
+0:2  - 0:10                       word: word
+0:2  - 0:10                         backquote_substitution
+0:2  - 0:3                            "\`"
+0:3  - 0:9                            body: backquote_substitution_body
+0:3  - 0:9                              complete_commands
+0:3  - 0:9                                command: complete_command
+0:3  - 0:9                                  body: list
+0:3  - 0:9                                    and_or: and_or
+0:3  - 0:9                                      pipeline: pipeline
+0:3  - 0:9                                        sequence: pipe_sequence
+0:3  - 0:9                                          command: command
+0:3  - 0:9                                            body: simple_command
+0:3  - 0:4                                              name: cmd_name
+0:3  - 0:4                                                word
+0:3  - 0:4                                                  literal `:`
+0:4  - 0:9                                              suffix: cmd_suffix
+0:5  - 0:9                                                word: word
+0:5  - 0:9                                                  pattern_bracket_source
+0:5  - 0:6                                                    "["
+0:6  - 0:8                                                    members: pattern_bracket_members_source
+0:6  - 0:8                                                      member: pattern_bracket_character_source `\\$`
+0:8  - 0:9                                                    "]"
+0:9  - 0:10                           "\`"
+0:10 - 1:0      trailing: linebreak
+0:10 - 1:0        newline_list
+0:10 - 1:0          "\n"
+
+==================
+deferred literal dollar
+:cst
+==================
+: ${x#[[:$ ]}
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:13     commands: complete_commands
+0:0  - 0:13       command: complete_command
+0:0  - 0:13         body: list
+0:0  - 0:13           and_or: and_or
+0:0  - 0:13             pipeline: pipeline
+0:0  - 0:13               sequence: pipe_sequence
+0:0  - 0:13                 command: command
+0:0  - 0:13                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:13                     suffix: cmd_suffix
+0:2  - 0:13                       word: word
+0:2  - 0:13                         parameter_expansion
+0:2  - 0:3                            "$"
+0:3  - 0:4                            "{"
+0:4  - 0:5                            parameter: variable_name `x`
+0:5  - 0:6                            operator: parameter_pattern_operator `#`
+0:6  - 0:12                           pattern: parameter_pattern
+0:6  - 0:12                             pattern_bracket_source
+0:6  - 0:7                                "["
+0:7  - 0:11                               members: pattern_bracket_members_source
+0:7  - 0:8                                  member: pattern_bracket_character_source `[`
+0:8  - 0:9                                  member: pattern_bracket_character_source `:`
+0:9  - 0:10                                 member: pattern_bracket_character_source `$`
+0:10 - 0:11                                 member: pattern_bracket_character_source ` `
+0:11 - 0:12                               "]"
+0:12 - 0:13                           "}"
+0:13 - 1:0      trailing: linebreak
+0:13 - 1:0        newline_list
+0:13 - 1:0          "\n"
+
+==================
+nested case
+:cst
+==================
+: [$(: $(case x in x) :;; esac))]
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:33     commands: complete_commands
+0:0  - 0:33       command: complete_command
+0:0  - 0:33         body: list
+0:0  - 0:33           and_or: and_or
+0:0  - 0:33             pipeline: pipeline
+0:0  - 0:33               sequence: pipe_sequence
+0:0  - 0:33                 command: command
+0:0  - 0:33                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:33                     suffix: cmd_suffix
+0:2  - 0:33                       word: word
+0:2  - 0:33                         pattern_bracket_source
+0:2  - 0:3                            "["
+0:3  - 0:32                           members: pattern_bracket_members_source
+0:3  - 0:32                             member: command_substitution
+0:3  - 0:4                                "$"
+0:4  - 0:5                                "("
+0:5  - 0:31                               body: command_substitution_body
+0:5  - 0:31                                 complete_commands
+0:5  - 0:31                                   command: complete_command
+0:5  - 0:31                                     body: list
+0:5  - 0:31                                       and_or: and_or
+0:5  - 0:31                                         pipeline: pipeline
+0:5  - 0:31                                           sequence: pipe_sequence
+0:5  - 0:31                                             command: command
+0:5  - 0:31                                               body: simple_command
+0:5  - 0:6                                                  name: cmd_name
+0:5  - 0:6                                                    word
+0:5  - 0:6                                                      literal `:`
+0:6  - 0:31                                                 suffix: cmd_suffix
+0:7  - 0:31                                                   word: word
+0:7  - 0:31                                                     command_substitution
+0:7  - 0:8                                                        "$"
+0:8  - 0:9                                                        "("
+0:9  - 0:30                                                       body: command_substitution_body
+0:9  - 0:30                                                         complete_commands
+0:9  - 0:30                                                           command: complete_command
+0:9  - 0:30                                                             body: list
+0:9  - 0:30                                                               and_or: and_or
+0:9  - 0:30                                                                 pipeline: pipeline
+0:9  - 0:30                                                                   sequence: pipe_sequence
+0:9  - 0:30                                                                     command: command
+0:9  - 0:30                                                                       body: compound_command
+0:9  - 0:30                                                                         case_clause
+0:9  - 0:13                                                                           case_keyword `case`
+0:14 - 0:15                                                                           word: word
+0:14 - 0:15                                                                             literal `x`
+0:16 - 0:18                                                                           in: in
+0:16 - 0:18                                                                             in_keyword `in`
+0:19 - 0:26                                                                           items: case_list
+0:19 - 0:26                                                                             item: case_item
+0:19 - 0:20                                                                               patterns: pattern_list
+0:19 - 0:20                                                                                 word: word
+0:19 - 0:20                                                                                   literal `x`
+0:20 - 0:21                                                                               ")"
+0:21 - 0:23                                                                               body: compound_list
+0:22 - 0:23                                                                                 body: term
+0:22 - 0:23                                                                                   and_or: and_or
+0:22 - 0:23                                                                                     pipeline: pipeline
+0:22 - 0:23                                                                                       sequence: pipe_sequence
+0:22 - 0:23                                                                                         command: command
+0:22 - 0:23                                                                                           body: simple_command
+0:22 - 0:23                                                                                             name: cmd_name
+0:22 - 0:23                                                                                               word
+0:22 - 0:23                                                                                                 literal `:`
+0:23 - 0:25                                                                               terminator: dsemi `;;`
+0:26 - 0:30                                                                           esac_keyword `esac`
+0:30 - 0:31                                                       ")"
+0:31 - 0:32                               ")"
+0:32 - 0:33                           "]"
+0:33 - 1:0      trailing: linebreak
+0:33 - 1:0        newline_list
+0:33 - 1:0          "\n"
+
+==================
+nested comment
+:cst
+==================
+: [$(: $(# comment )
+:))]
+
+------------------
+
+0:0  - 2:0    program
+0:0  - 1:4      commands: complete_commands
+0:0  - 1:4        command: complete_command
+0:0  - 1:4          body: list
+0:0  - 1:4            and_or: and_or
+0:0  - 1:4              pipeline: pipeline
+0:0  - 1:4                sequence: pipe_sequence
+0:0  - 1:4                  command: command
+0:0  - 1:4                    body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 1:4                      suffix: cmd_suffix
+0:2  - 1:4                        word: word
+0:2  - 1:4                          pattern_bracket_source
+0:2  - 0:3                            "["
+0:3  - 1:3                            members: pattern_bracket_members_source
+0:3  - 1:3                              member: command_substitution
+0:3  - 0:4                                "$"
+0:4  - 0:5                                "("
+0:5  - 1:2                                body: command_substitution_body
+0:5  - 1:2                                  complete_commands
+0:5  - 1:2                                    command: complete_command
+0:5  - 1:2                                      body: list
+0:5  - 1:2                                        and_or: and_or
+0:5  - 1:2                                          pipeline: pipeline
+0:5  - 1:2                                            sequence: pipe_sequence
+0:5  - 1:2                                              command: command
+0:5  - 1:2                                                body: simple_command
+0:5  - 0:6                                                  name: cmd_name
+0:5  - 0:6                                                    word
+0:5  - 0:6                                                      literal `:`
+0:6  - 1:2                                                  suffix: cmd_suffix
+0:7  - 1:2                                                    word: word
+0:7  - 1:2                                                      command_substitution
+0:7  - 0:8                                                        "$"
+0:8  - 0:9                                                        "("
+0:9  - 1:1                                                        body: command_substitution_body
+0:9  - 1:0                                                          linebreak
+0:9  - 1:0                                                            newline_list
+0:9  - 0:20                                                             comment
+0:9  - 0:20                                                               comment_text `# comment )`
+0:20 - 1:0                                                              "\n"
+1:0  - 1:1                                                          complete_commands
+1:0  - 1:1                                                            command: complete_command
+1:0  - 1:1                                                              body: list
+1:0  - 1:1                                                                and_or: and_or
+1:0  - 1:1                                                                  pipeline: pipeline
+1:0  - 1:1                                                                    sequence: pipe_sequence
+1:0  - 1:1                                                                      command: command
+1:0  - 1:1                                                                        body: simple_command
+1:0  - 1:1                                                                          name: cmd_name
+1:0  - 1:1                                                                            word
+1:0  - 1:1                                                                              literal `:`
+1:1  - 1:2                                                        ")"
+1:2  - 1:3                                ")"
+1:3  - 1:4                            "]"
+1:4  - 2:0      trailing: linebreak
+1:4  - 2:0        newline_list
+1:4  - 2:0          "\n"
+
+==================
+quoted nested case
+:cst
+==================
+: [$(: "$(case x in x) : '"';; esac)")]
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:39     commands: complete_commands
+0:0  - 0:39       command: complete_command
+0:0  - 0:39         body: list
+0:0  - 0:39           and_or: and_or
+0:0  - 0:39             pipeline: pipeline
+0:0  - 0:39               sequence: pipe_sequence
+0:0  - 0:39                 command: command
+0:0  - 0:39                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:39                     suffix: cmd_suffix
+0:2  - 0:39                       word: word
+0:2  - 0:39                         pattern_bracket_source
+0:2  - 0:3                            "["
+0:3  - 0:38                           members: pattern_bracket_members_source
+0:3  - 0:38                             member: command_substitution
+0:3  - 0:4                                "$"
+0:4  - 0:5                                "("
+0:5  - 0:37                               body: command_substitution_body
+0:5  - 0:37                                 complete_commands
+0:5  - 0:37                                   command: complete_command
+0:5  - 0:37                                     body: list
+0:5  - 0:37                                       and_or: and_or
+0:5  - 0:37                                         pipeline: pipeline
+0:5  - 0:37                                           sequence: pipe_sequence
+0:5  - 0:37                                             command: command
+0:5  - 0:37                                               body: simple_command
+0:5  - 0:6                                                  name: cmd_name
+0:5  - 0:6                                                    word
+0:5  - 0:6                                                      literal `:`
+0:6  - 0:37                                                 suffix: cmd_suffix
+0:7  - 0:37                                                   word: word
+0:7  - 0:37                                                     double_quoted
+0:7  - 0:8                                                        "\""
+0:8  - 0:36                                                       command_substitution
+0:8  - 0:9                                                          "$"
+0:9  - 0:10                                                         "("
+0:10 - 0:35                                                         body: command_substitution_body
+0:10 - 0:35                                                           complete_commands
+0:10 - 0:35                                                             command: complete_command
+0:10 - 0:35                                                               body: list
+0:10 - 0:35                                                                 and_or: and_or
+0:10 - 0:35                                                                   pipeline: pipeline
+0:10 - 0:35                                                                     sequence: pipe_sequence
+0:10 - 0:35                                                                       command: command
+0:10 - 0:35                                                                         body: compound_command
+0:10 - 0:35                                                                           case_clause
+0:10 - 0:14                                                                             case_keyword `case`
+0:15 - 0:16                                                                             word: word
+0:15 - 0:16                                                                               literal `x`
+0:17 - 0:19                                                                             in: in
+0:17 - 0:19                                                                               in_keyword `in`
+0:20 - 0:31                                                                             items: case_list
+0:20 - 0:31                                                                               item: case_item
+0:20 - 0:21                                                                                 patterns: pattern_list
+0:20 - 0:21                                                                                   word: word
+0:20 - 0:21                                                                                     literal `x`
+0:21 - 0:22                                                                                 ")"
+0:22 - 0:28                                                                                 body: compound_list
+0:23 - 0:28                                                                                   body: term
+0:23 - 0:28                                                                                     and_or: and_or
+0:23 - 0:28                                                                                       pipeline: pipeline
+0:23 - 0:28                                                                                         sequence: pipe_sequence
+0:23 - 0:28                                                                                           command: command
+0:23 - 0:28                                                                                             body: simple_command
+0:23 - 0:24                                                                                               name: cmd_name
+0:23 - 0:24                                                                                                 word
+0:23 - 0:24                                                                                                   literal `:`
+0:24 - 0:28                                                                                               suffix: cmd_suffix
+0:25 - 0:28                                                                                                 word: word
+0:25 - 0:28                                                                                                   single_quoted
+0:25 - 0:26                                                                                                     "'"
+0:26 - 0:27                                                                                                     single_quote_content `\"`
+0:27 - 0:28                                                                                                     "'"
+0:28 - 0:30                                                                                 terminator: dsemi `;;`
+0:31 - 0:35                                                                             esac_keyword `esac`
+0:35 - 0:36                                                         ")"
+0:36 - 0:37                                                       "\""
+0:37 - 0:38                               ")"
+0:38 - 0:39                           "]"
+0:39 - 1:0      trailing: linebreak
+0:39 - 1:0        newline_list
+0:39 - 1:0          "\n"
+
+==================
+function case body
+:cst
+==================
+: [$(f() case x in x) :;; esac)]
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:32     commands: complete_commands
+0:0  - 0:32       command: complete_command
+0:0  - 0:32         body: list
+0:0  - 0:32           and_or: and_or
+0:0  - 0:32             pipeline: pipeline
+0:0  - 0:32               sequence: pipe_sequence
+0:0  - 0:32                 command: command
+0:0  - 0:32                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:32                     suffix: cmd_suffix
+0:2  - 0:32                       word: word
+0:2  - 0:32                         pattern_bracket_source
+0:2  - 0:3                            "["
+0:3  - 0:31                           members: pattern_bracket_members_source
+0:3  - 0:31                             member: command_substitution
+0:3  - 0:4                                "$"
+0:4  - 0:5                                "("
+0:5  - 0:30                               body: command_substitution_body
+0:5  - 0:30                                 complete_commands
+0:5  - 0:30                                   command: complete_command
+0:5  - 0:30                                     body: list
+0:5  - 0:30                                       and_or: and_or
+0:5  - 0:30                                         pipeline: pipeline
+0:5  - 0:30                                           sequence: pipe_sequence
+0:5  - 0:30                                             command: command
+0:5  - 0:30                                               body: function_definition
+0:5  - 0:6                                                  name: fname `f`
+0:6  - 0:7                                                  "("
+0:7  - 0:8                                                  ")"
+0:9  - 0:30                                                 body: function_body
+0:9  - 0:30                                                   body: compound_command
+0:9  - 0:30                                                     case_clause
+0:9  - 0:13                                                       case_keyword `case`
+0:14 - 0:15                                                       word: word
+0:14 - 0:15                                                         literal `x`
+0:16 - 0:18                                                       in: in
+0:16 - 0:18                                                         in_keyword `in`
+0:19 - 0:26                                                       items: case_list
+0:19 - 0:26                                                         item: case_item
+0:19 - 0:20                                                           patterns: pattern_list
+0:19 - 0:20                                                             word: word
+0:19 - 0:20                                                               literal `x`
+0:20 - 0:21                                                           ")"
+0:21 - 0:23                                                           body: compound_list
+0:22 - 0:23                                                             body: term
+0:22 - 0:23                                                               and_or: and_or
+0:22 - 0:23                                                                 pipeline: pipeline
+0:22 - 0:23                                                                   sequence: pipe_sequence
+0:22 - 0:23                                                                     command: command
+0:22 - 0:23                                                                       body: simple_command
+0:22 - 0:23                                                                         name: cmd_name
+0:22 - 0:23                                                                           word
+0:22 - 0:23                                                                             literal `:`
+0:23 - 0:25                                                           terminator: dsemi `;;`
+0:26 - 0:30                                                       esac_keyword `esac`
+0:30 - 0:31                               ")"
+0:31 - 0:32                           "]"
+0:32 - 1:0      trailing: linebreak
+0:32 - 1:0        newline_list
+0:32 - 1:0          "\n"
+
+==================
+function brace body
+:cst
+==================
+: [$(f() { case x in x) :;; esac; })]
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:37     commands: complete_commands
+0:0  - 0:37       command: complete_command
+0:0  - 0:37         body: list
+0:0  - 0:37           and_or: and_or
+0:0  - 0:37             pipeline: pipeline
+0:0  - 0:37               sequence: pipe_sequence
+0:0  - 0:37                 command: command
+0:0  - 0:37                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:37                     suffix: cmd_suffix
+0:2  - 0:37                       word: word
+0:2  - 0:37                         pattern_bracket_source
+0:2  - 0:3                            "["
+0:3  - 0:36                           members: pattern_bracket_members_source
+0:3  - 0:36                             member: command_substitution
+0:3  - 0:4                                "$"
+0:4  - 0:5                                "("
+0:5  - 0:35                               body: command_substitution_body
+0:5  - 0:35                                 complete_commands
+0:5  - 0:35                                   command: complete_command
+0:5  - 0:35                                     body: list
+0:5  - 0:35                                       and_or: and_or
+0:5  - 0:35                                         pipeline: pipeline
+0:5  - 0:35                                           sequence: pipe_sequence
+0:5  - 0:35                                             command: command
+0:5  - 0:35                                               body: function_definition
+0:5  - 0:6                                                  name: fname `f`
+0:6  - 0:7                                                  "("
+0:7  - 0:8                                                  ")"
+0:9  - 0:35                                                 body: function_body
+0:9  - 0:35                                                   body: compound_command
+0:9  - 0:35                                                     brace_group
+0:9  - 0:10                                                       "{"
+0:10 - 0:33                                                       body: compound_list
+0:11 - 0:32                                                         body: term
+0:11 - 0:32                                                           and_or: and_or
+0:11 - 0:32                                                             pipeline: pipeline
+0:11 - 0:32                                                               sequence: pipe_sequence
+0:11 - 0:32                                                                 command: command
+0:11 - 0:32                                                                   body: compound_command
+0:11 - 0:32                                                                     case_clause
+0:11 - 0:15                                                                       case_keyword `case`
+0:16 - 0:17                                                                       word: word
+0:16 - 0:17                                                                         literal `x`
+0:18 - 0:20                                                                       in: in
+0:18 - 0:20                                                                         in_keyword `in`
+0:21 - 0:28                                                                       items: case_list
+0:21 - 0:28                                                                         item: case_item
+0:21 - 0:22                                                                           patterns: pattern_list
+0:21 - 0:22                                                                             word: word
+0:21 - 0:22                                                                               literal `x`
+0:22 - 0:23                                                                           ")"
+0:23 - 0:25                                                                           body: compound_list
+0:24 - 0:25                                                                             body: term
+0:24 - 0:25                                                                               and_or: and_or
+0:24 - 0:25                                                                                 pipeline: pipeline
+0:24 - 0:25                                                                                   sequence: pipe_sequence
+0:24 - 0:25                                                                                     command: command
+0:24 - 0:25                                                                                       body: simple_command
+0:24 - 0:25                                                                                         name: cmd_name
+0:24 - 0:25                                                                                           word
+0:24 - 0:25                                                                                             literal `:`
+0:25 - 0:27                                                                           terminator: dsemi `;;`
+0:28 - 0:32                                                                       esac_keyword `esac`
+0:32 - 0:33                                                         terminator: separator
+0:32 - 0:33                                                           operator: separator_op
+0:32 - 0:33                                                             ";"
+0:34 - 0:35                                                       "}"
+0:35 - 0:36                               ")"
+0:36 - 0:37                           "]"
+0:37 - 1:0      trailing: linebreak
+0:37 - 1:0        newline_list
+0:37 - 1:0          "\n"
+
+==================
+for name without separator
+:cst
+==================
+: [$(for case do case x in x) :;; esac; done)]
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:46     commands: complete_commands
+0:0  - 0:46       command: complete_command
+0:0  - 0:46         body: list
+0:0  - 0:46           and_or: and_or
+0:0  - 0:46             pipeline: pipeline
+0:0  - 0:46               sequence: pipe_sequence
+0:0  - 0:46                 command: command
+0:0  - 0:46                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:46                     suffix: cmd_suffix
+0:2  - 0:46                       word: word
+0:2  - 0:46                         pattern_bracket_source
+0:2  - 0:3                            "["
+0:3  - 0:45                           members: pattern_bracket_members_source
+0:3  - 0:45                             member: command_substitution
+0:3  - 0:4                                "$"
+0:4  - 0:5                                "("
+0:5  - 0:44                               body: command_substitution_body
+0:5  - 0:44                                 complete_commands
+0:5  - 0:44                                   command: complete_command
+0:5  - 0:44                                     body: list
+0:5  - 0:44                                       and_or: and_or
+0:5  - 0:44                                         pipeline: pipeline
+0:5  - 0:44                                           sequence: pipe_sequence
+0:5  - 0:44                                             command: command
+0:5  - 0:44                                               body: compound_command
+0:5  - 0:44                                                 for_clause
+0:5  - 0:8                                                    for_keyword `for`
+0:9  - 0:13                                                   name: name `case`
+0:14 - 0:44                                                   body: do_group
+0:14 - 0:16                                                     do_keyword `do`
+0:16 - 0:39                                                     body: compound_list
+0:17 - 0:38                                                       body: term
+0:17 - 0:38                                                         and_or: and_or
+0:17 - 0:38                                                           pipeline: pipeline
+0:17 - 0:38                                                             sequence: pipe_sequence
+0:17 - 0:38                                                               command: command
+0:17 - 0:38                                                                 body: compound_command
+0:17 - 0:38                                                                   case_clause
+0:17 - 0:21                                                                     case_keyword `case`
+0:22 - 0:23                                                                     word: word
+0:22 - 0:23                                                                       literal `x`
+0:24 - 0:26                                                                     in: in
+0:24 - 0:26                                                                       in_keyword `in`
+0:27 - 0:34                                                                     items: case_list
+0:27 - 0:34                                                                       item: case_item
+0:27 - 0:28                                                                         patterns: pattern_list
+0:27 - 0:28                                                                           word: word
+0:27 - 0:28                                                                             literal `x`
+0:28 - 0:29                                                                         ")"
+0:29 - 0:31                                                                         body: compound_list
+0:30 - 0:31                                                                           body: term
+0:30 - 0:31                                                                             and_or: and_or
+0:30 - 0:31                                                                               pipeline: pipeline
+0:30 - 0:31                                                                                 sequence: pipe_sequence
+0:30 - 0:31                                                                                   command: command
+0:30 - 0:31                                                                                     body: simple_command
+0:30 - 0:31                                                                                       name: cmd_name
+0:30 - 0:31                                                                                         word
+0:30 - 0:31                                                                                           literal `:`
+0:31 - 0:33                                                                         terminator: dsemi `;;`
+0:34 - 0:38                                                                     esac_keyword `esac`
+0:38 - 0:39                                                       terminator: separator
+0:38 - 0:39                                                         operator: separator_op
+0:38 - 0:39                                                           ";"
+0:40 - 0:44                                                     done_keyword `done`
+0:44 - 0:45                               ")"
+0:45 - 0:46                           "]"
+0:46 - 1:0      trailing: linebreak
+0:46 - 1:0        newline_list
+0:46 - 1:0          "\n"
+
+==================
+for header linebreak and reserved wordlist
+:cst
+==================
+: [$(for x
+in case esac do for; do case x in x) :;; esac; done)]
+
+------------------
+
+0:0  - 2:0    program
+0:0  - 1:53     commands: complete_commands
+0:0  - 1:53       command: complete_command
+0:0  - 1:53         body: list
+0:0  - 1:53           and_or: and_or
+0:0  - 1:53             pipeline: pipeline
+0:0  - 1:53               sequence: pipe_sequence
+0:0  - 1:53                 command: command
+0:0  - 1:53                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 1:53                     suffix: cmd_suffix
+0:2  - 1:53                       word: word
+0:2  - 1:53                         pattern_bracket_source
+0:2  - 0:3                            "["
+0:3  - 1:52                           members: pattern_bracket_members_source
+0:3  - 1:52                             member: command_substitution
+0:3  - 0:4                                "$"
+0:4  - 0:5                                "("
+0:5  - 1:51                               body: command_substitution_body
+0:5  - 1:51                                 complete_commands
+0:5  - 1:51                                   command: complete_command
+0:5  - 1:51                                     body: list
+0:5  - 1:51                                       and_or: and_or
+0:5  - 1:51                                         pipeline: pipeline
+0:5  - 1:51                                           sequence: pipe_sequence
+0:5  - 1:51                                             command: command
+0:5  - 1:51                                               body: compound_command
+0:5  - 1:51                                                 for_clause
+0:5  - 0:8                                                    for_keyword `for`
+0:9  - 0:10                                                   name: name `x`
+0:10 - 1:0                                                    linebreak
+0:10 - 1:0                                                      newline_list
+0:10 - 1:0                                                        "\n"
+1:0  - 1:2                                                    in: in
+1:0  - 1:2                                                      in_keyword `in`
+1:3  - 1:19                                                   words: wordlist
+1:3  - 1:7                                                      word: word
+1:3  - 1:7                                                        literal `case`
+1:8  - 1:12                                                     word: word
+1:8  - 1:12                                                       literal `esac`
+1:13 - 1:15                                                     word: word
+1:13 - 1:15                                                       literal `do`
+1:16 - 1:19                                                     word: word
+1:16 - 1:19                                                       literal `for`
+1:19 - 1:20                                                   separator: sequential_sep
+1:19 - 1:20                                                     ";"
+1:21 - 1:51                                                   body: do_group
+1:21 - 1:23                                                     do_keyword `do`
+1:23 - 1:46                                                     body: compound_list
+1:24 - 1:45                                                       body: term
+1:24 - 1:45                                                         and_or: and_or
+1:24 - 1:45                                                           pipeline: pipeline
+1:24 - 1:45                                                             sequence: pipe_sequence
+1:24 - 1:45                                                               command: command
+1:24 - 1:45                                                                 body: compound_command
+1:24 - 1:45                                                                   case_clause
+1:24 - 1:28                                                                     case_keyword `case`
+1:29 - 1:30                                                                     word: word
+1:29 - 1:30                                                                       literal `x`
+1:31 - 1:33                                                                     in: in
+1:31 - 1:33                                                                       in_keyword `in`
+1:34 - 1:41                                                                     items: case_list
+1:34 - 1:41                                                                       item: case_item
+1:34 - 1:35                                                                         patterns: pattern_list
+1:34 - 1:35                                                                           word: word
+1:34 - 1:35                                                                             literal `x`
+1:35 - 1:36                                                                         ")"
+1:36 - 1:38                                                                         body: compound_list
+1:37 - 1:38                                                                           body: term
+1:37 - 1:38                                                                             and_or: and_or
+1:37 - 1:38                                                                               pipeline: pipeline
+1:37 - 1:38                                                                                 sequence: pipe_sequence
+1:37 - 1:38                                                                                   command: command
+1:37 - 1:38                                                                                     body: simple_command
+1:37 - 1:38                                                                                       name: cmd_name
+1:37 - 1:38                                                                                         word
+1:37 - 1:38                                                                                           literal `:`
+1:38 - 1:40                                                                         terminator: dsemi `;;`
+1:41 - 1:45                                                                     esac_keyword `esac`
+1:45 - 1:46                                                       terminator: separator
+1:45 - 1:46                                                         operator: separator_op
+1:45 - 1:46                                                           ";"
+1:47 - 1:51                                                     done_keyword `done`
+1:51 - 1:52                               ")"
+1:52 - 1:53                           "]"
+1:53 - 2:0      trailing: linebreak
+1:53 - 2:0        newline_list
+1:53 - 2:0          "\n"
+
+==================
+closed subshell with redirects
+:cst
+==================
+: [$(case x in x) (: )2>pre$(:)esac 3<case esac)]
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:49     commands: complete_commands
+0:0  - 0:49       command: complete_command
+0:0  - 0:49         body: list
+0:0  - 0:49           and_or: and_or
+0:0  - 0:49             pipeline: pipeline
+0:0  - 0:49               sequence: pipe_sequence
+0:0  - 0:49                 command: command
+0:0  - 0:49                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:49                     suffix: cmd_suffix
+0:2  - 0:49                       word: word
+0:2  - 0:49                         pattern_bracket_source
+0:2  - 0:3                            "["
+0:3  - 0:48                           members: pattern_bracket_members_source
+0:3  - 0:48                             member: command_substitution
+0:3  - 0:4                                "$"
+0:4  - 0:5                                "("
+0:5  - 0:47                               body: command_substitution_body
+0:5  - 0:47                                 complete_commands
+0:5  - 0:47                                   command: complete_command
+0:5  - 0:47                                     body: list
+0:5  - 0:47                                       and_or: and_or
+0:5  - 0:47                                         pipeline: pipeline
+0:5  - 0:47                                           sequence: pipe_sequence
+0:5  - 0:47                                             command: command
+0:5  - 0:47                                               body: compound_command
+0:5  - 0:47                                                 case_clause
+0:5  - 0:9                                                    case_keyword `case`
+0:10 - 0:11                                                   word: word
+0:10 - 0:11                                                     literal `x`
+0:12 - 0:14                                                   in: in
+0:12 - 0:14                                                     in_keyword `in`
+0:15 - 0:43                                                   items: case_list_ns
+0:15 - 0:43                                                     item: case_item_ns
+0:15 - 0:16                                                       patterns: pattern_list
+0:15 - 0:16                                                         word: word
+0:15 - 0:16                                                           literal `x`
+0:16 - 0:17                                                       ")"
+0:17 - 0:42                                                       body: compound_list
+0:18 - 0:42                                                         body: term
+0:18 - 0:42                                                           and_or: and_or
+0:18 - 0:42                                                             pipeline: pipeline
+0:18 - 0:42                                                               sequence: pipe_sequence
+0:18 - 0:42                                                                 command: command
+0:18 - 0:22                                                                   body: compound_command
+0:18 - 0:22                                                                     subshell
+0:18 - 0:19                                                                       "("
+0:19 - 0:20                                                                       body: compound_list
+0:19 - 0:20                                                                         body: term
+0:19 - 0:20                                                                           and_or: and_or
+0:19 - 0:20                                                                             pipeline: pipeline
+0:19 - 0:20                                                                               sequence: pipe_sequence
+0:19 - 0:20                                                                                 command: command
+0:19 - 0:20                                                                                   body: simple_command
+0:19 - 0:20                                                                                     name: cmd_name
+0:19 - 0:20                                                                                       word
+0:19 - 0:20                                                                                         literal `:`
+0:21 - 0:22                                                                       ")"
+0:22 - 0:42                                                                   redirects: redirect_list
+0:22 - 0:35                                                                     redirect: io_redirect
+0:22 - 0:23                                                                       number: io_number `2`
+0:23 - 0:35                                                                       body: io_file
+0:23 - 0:24                                                                         ">"
+0:24 - 0:35                                                                         filename: filename
+0:24 - 0:35                                                                           word: word
+0:24 - 0:27                                                                             literal `pre`
+0:27 - 0:31                                                                             command_substitution
+0:27 - 0:28                                                                               "$"
+0:28 - 0:29                                                                               "("
+0:29 - 0:30                                                                               body: command_substitution_body
+0:29 - 0:30                                                                                 complete_commands
+0:29 - 0:30                                                                                   command: complete_command
+0:29 - 0:30                                                                                     body: list
+0:29 - 0:30                                                                                       and_or: and_or
+0:29 - 0:30                                                                                         pipeline: pipeline
+0:29 - 0:30                                                                                           sequence: pipe_sequence
+0:29 - 0:30                                                                                             command: command
+0:29 - 0:30                                                                                               body: simple_command
+0:29 - 0:30                                                                                                 name: cmd_name
+0:29 - 0:30                                                                                                   word
+0:29 - 0:30                                                                                                     literal `:`
+0:30 - 0:31                                                                               ")"
+0:31 - 0:35                                                                             literal `esac`
+0:36 - 0:42                                                                     redirect: io_redirect
+0:36 - 0:37                                                                       number: io_number `3`
+0:37 - 0:42                                                                       body: io_file
+0:37 - 0:38                                                                         "<"
+0:38 - 0:42                                                                         filename: filename
+0:38 - 0:42                                                                           word: word
+0:38 - 0:42                                                                             literal `case`
+0:43 - 0:47                                                   esac_keyword `esac`
+0:47 - 0:48                               ")"
+0:48 - 0:49                           "]"
+0:49 - 1:0      trailing: linebreak
+0:49 - 1:0        newline_list
+0:49 - 1:0          "\n"
+
+==================
+closed brace group
+:cst
+==================
+: [$(case x in x) { :; } esac)]
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:31     commands: complete_commands
+0:0  - 0:31       command: complete_command
+0:0  - 0:31         body: list
+0:0  - 0:31           and_or: and_or
+0:0  - 0:31             pipeline: pipeline
+0:0  - 0:31               sequence: pipe_sequence
+0:0  - 0:31                 command: command
+0:0  - 0:31                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:31                     suffix: cmd_suffix
+0:2  - 0:31                       word: word
+0:2  - 0:31                         pattern_bracket_source
+0:2  - 0:3                            "["
+0:3  - 0:30                           members: pattern_bracket_members_source
+0:3  - 0:30                             member: command_substitution
+0:3  - 0:4                                "$"
+0:4  - 0:5                                "("
+0:5  - 0:29                               body: command_substitution_body
+0:5  - 0:29                                 complete_commands
+0:5  - 0:29                                   command: complete_command
+0:5  - 0:29                                     body: list
+0:5  - 0:29                                       and_or: and_or
+0:5  - 0:29                                         pipeline: pipeline
+0:5  - 0:29                                           sequence: pipe_sequence
+0:5  - 0:29                                             command: command
+0:5  - 0:29                                               body: compound_command
+0:5  - 0:29                                                 case_clause
+0:5  - 0:9                                                    case_keyword `case`
+0:10 - 0:11                                                   word: word
+0:10 - 0:11                                                     literal `x`
+0:12 - 0:14                                                   in: in
+0:12 - 0:14                                                     in_keyword `in`
+0:15 - 0:25                                                   items: case_list_ns
+0:15 - 0:25                                                     item: case_item_ns
+0:15 - 0:16                                                       patterns: pattern_list
+0:15 - 0:16                                                         word: word
+0:15 - 0:16                                                           literal `x`
+0:16 - 0:17                                                       ")"
+0:17 - 0:24                                                       body: compound_list
+0:18 - 0:24                                                         body: term
+0:18 - 0:24                                                           and_or: and_or
+0:18 - 0:24                                                             pipeline: pipeline
+0:18 - 0:24                                                               sequence: pipe_sequence
+0:18 - 0:24                                                                 command: command
+0:18 - 0:24                                                                   body: compound_command
+0:18 - 0:24                                                                     brace_group
+0:18 - 0:19                                                                       "{"
+0:19 - 0:22                                                                       body: compound_list
+0:20 - 0:21                                                                         body: term
+0:20 - 0:21                                                                           and_or: and_or
+0:20 - 0:21                                                                             pipeline: pipeline
+0:20 - 0:21                                                                               sequence: pipe_sequence
+0:20 - 0:21                                                                                 command: command
+0:20 - 0:21                                                                                   body: simple_command
+0:20 - 0:21                                                                                     name: cmd_name
+0:20 - 0:21                                                                                       word
+0:20 - 0:21                                                                                         literal `:`
+0:21 - 0:22                                                                         terminator: separator
+0:21 - 0:22                                                                           operator: separator_op
+0:21 - 0:22                                                                             ";"
+0:23 - 0:24                                                                       "}"
+0:25 - 0:29                                                   esac_keyword `esac`
+0:29 - 0:30                               ")"
+0:30 - 0:31                           "]"
+0:31 - 1:0      trailing: linebreak
+0:31 - 1:0        newline_list
+0:31 - 1:0          "\n"
+
+==================
+closed if clause
+:cst
+==================
+: [$(case x in x) if :; then :; fi esac)]
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:41     commands: complete_commands
+0:0  - 0:41       command: complete_command
+0:0  - 0:41         body: list
+0:0  - 0:41           and_or: and_or
+0:0  - 0:41             pipeline: pipeline
+0:0  - 0:41               sequence: pipe_sequence
+0:0  - 0:41                 command: command
+0:0  - 0:41                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:41                     suffix: cmd_suffix
+0:2  - 0:41                       word: word
+0:2  - 0:41                         pattern_bracket_source
+0:2  - 0:3                            "["
+0:3  - 0:40                           members: pattern_bracket_members_source
+0:3  - 0:40                             member: command_substitution
+0:3  - 0:4                                "$"
+0:4  - 0:5                                "("
+0:5  - 0:39                               body: command_substitution_body
+0:5  - 0:39                                 complete_commands
+0:5  - 0:39                                   command: complete_command
+0:5  - 0:39                                     body: list
+0:5  - 0:39                                       and_or: and_or
+0:5  - 0:39                                         pipeline: pipeline
+0:5  - 0:39                                           sequence: pipe_sequence
+0:5  - 0:39                                             command: command
+0:5  - 0:39                                               body: compound_command
+0:5  - 0:39                                                 case_clause
+0:5  - 0:9                                                    case_keyword `case`
+0:10 - 0:11                                                   word: word
+0:10 - 0:11                                                     literal `x`
+0:12 - 0:14                                                   in: in
+0:12 - 0:14                                                     in_keyword `in`
+0:15 - 0:35                                                   items: case_list_ns
+0:15 - 0:35                                                     item: case_item_ns
+0:15 - 0:16                                                       patterns: pattern_list
+0:15 - 0:16                                                         word: word
+0:15 - 0:16                                                           literal `x`
+0:16 - 0:17                                                       ")"
+0:17 - 0:34                                                       body: compound_list
+0:18 - 0:34                                                         body: term
+0:18 - 0:34                                                           and_or: and_or
+0:18 - 0:34                                                             pipeline: pipeline
+0:18 - 0:34                                                               sequence: pipe_sequence
+0:18 - 0:34                                                                 command: command
+0:18 - 0:34                                                                   body: compound_command
+0:18 - 0:34                                                                     if_clause
+0:18 - 0:20                                                                       if_keyword `if`
+0:20 - 0:23                                                                       condition: compound_list
+0:21 - 0:22                                                                         body: term
+0:21 - 0:22                                                                           and_or: and_or
+0:21 - 0:22                                                                             pipeline: pipeline
+0:21 - 0:22                                                                               sequence: pipe_sequence
+0:21 - 0:22                                                                                 command: command
+0:21 - 0:22                                                                                   body: simple_command
+0:21 - 0:22                                                                                     name: cmd_name
+0:21 - 0:22                                                                                       word
+0:21 - 0:22                                                                                         literal `:`
+0:22 - 0:23                                                                         terminator: separator
+0:22 - 0:23                                                                           operator: separator_op
+0:22 - 0:23                                                                             ";"
+0:24 - 0:28                                                                       then_keyword `then`
+0:28 - 0:31                                                                       consequence: compound_list
+0:29 - 0:30                                                                         body: term
+0:29 - 0:30                                                                           and_or: and_or
+0:29 - 0:30                                                                             pipeline: pipeline
+0:29 - 0:30                                                                               sequence: pipe_sequence
+0:29 - 0:30                                                                                 command: command
+0:29 - 0:30                                                                                   body: simple_command
+0:29 - 0:30                                                                                     name: cmd_name
+0:29 - 0:30                                                                                       word
+0:29 - 0:30                                                                                         literal `:`
+0:30 - 0:31                                                                         terminator: separator
+0:30 - 0:31                                                                           operator: separator_op
+0:30 - 0:31                                                                             ";"
+0:32 - 0:34                                                                       fi_keyword `fi`
+0:35 - 0:39                                                   esac_keyword `esac`
+0:39 - 0:40                               ")"
+0:40 - 0:41                           "]"
+0:41 - 1:0      trailing: linebreak
+0:41 - 1:0        newline_list
+0:41 - 1:0          "\n"
+
+==================
+simple command redirect keeps suffix word
+:cst
+==================
+: [$(case x in x) : >case esac;; y) :;; esac)]
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:46     commands: complete_commands
+0:0  - 0:46       command: complete_command
+0:0  - 0:46         body: list
+0:0  - 0:46           and_or: and_or
+0:0  - 0:46             pipeline: pipeline
+0:0  - 0:46               sequence: pipe_sequence
+0:0  - 0:46                 command: command
+0:0  - 0:46                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:46                     suffix: cmd_suffix
+0:2  - 0:46                       word: word
+0:2  - 0:46                         pattern_bracket_source
+0:2  - 0:3                            "["
+0:3  - 0:45                           members: pattern_bracket_members_source
+0:3  - 0:45                             member: command_substitution
+0:3  - 0:4                                "$"
+0:4  - 0:5                                "("
+0:5  - 0:44                               body: command_substitution_body
+0:5  - 0:44                                 complete_commands
+0:5  - 0:44                                   command: complete_command
+0:5  - 0:44                                     body: list
+0:5  - 0:44                                       and_or: and_or
+0:5  - 0:44                                         pipeline: pipeline
+0:5  - 0:44                                           sequence: pipe_sequence
+0:5  - 0:44                                             command: command
+0:5  - 0:44                                               body: compound_command
+0:5  - 0:44                                                 case_clause
+0:5  - 0:9                                                    case_keyword `case`
+0:10 - 0:11                                                   word: word
+0:10 - 0:11                                                     literal `x`
+0:12 - 0:14                                                   in: in
+0:12 - 0:14                                                     in_keyword `in`
+0:15 - 0:40                                                   items: case_list
+0:15 - 0:33                                                     item: case_item
+0:15 - 0:16                                                       patterns: pattern_list
+0:15 - 0:16                                                         word: word
+0:15 - 0:16                                                           literal `x`
+0:16 - 0:17                                                       ")"
+0:17 - 0:30                                                       body: compound_list
+0:18 - 0:30                                                         body: term
+0:18 - 0:30                                                           and_or: and_or
+0:18 - 0:30                                                             pipeline: pipeline
+0:18 - 0:30                                                               sequence: pipe_sequence
+0:18 - 0:30                                                                 command: command
+0:18 - 0:30                                                                   body: simple_command
+0:18 - 0:19                                                                     name: cmd_name
+0:18 - 0:19                                                                       word
+0:18 - 0:19                                                                         literal `:`
+0:19 - 0:30                                                                     suffix: cmd_suffix
+0:20 - 0:25                                                                       redirect: io_redirect
+0:20 - 0:25                                                                         body: io_file
+0:20 - 0:21                                                                           ">"
+0:21 - 0:25                                                                           filename: filename
+0:21 - 0:25                                                                             word: word
+0:21 - 0:25                                                                               literal `case`
+0:26 - 0:30                                                                       word: word
+0:26 - 0:30                                                                         literal `esac`
+0:30 - 0:32                                                       terminator: dsemi `;;`
+0:33 - 0:40                                                     item: case_item
+0:33 - 0:34                                                       patterns: pattern_list
+0:33 - 0:34                                                         word: word
+0:33 - 0:34                                                           literal `y`
+0:34 - 0:35                                                       ")"
+0:35 - 0:37                                                       body: compound_list
+0:36 - 0:37                                                         body: term
+0:36 - 0:37                                                           and_or: and_or
+0:36 - 0:37                                                             pipeline: pipeline
+0:36 - 0:37                                                               sequence: pipe_sequence
+0:36 - 0:37                                                                 command: command
+0:36 - 0:37                                                                   body: simple_command
+0:36 - 0:37                                                                     name: cmd_name
+0:36 - 0:37                                                                       word
+0:36 - 0:37                                                                         literal `:`
+0:37 - 0:39                                                       terminator: dsemi `;;`
+0:40 - 0:44                                                   esac_keyword `esac`
+0:44 - 0:45                               ")"
+0:45 - 0:46                           "]"
+0:46 - 1:0      trailing: linebreak
+0:46 - 1:0        newline_list
+0:46 - 1:0          "\n"
+
+==================
+bracket quoted parameter apostrophe
+:cst
+==================
+: ${v#["${x-'}"]}
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:17     commands: complete_commands
+0:0  - 0:17       command: complete_command
+0:0  - 0:17         body: list
+0:0  - 0:17           and_or: and_or
+0:0  - 0:17             pipeline: pipeline
+0:0  - 0:17               sequence: pipe_sequence
+0:0  - 0:17                 command: command
+0:0  - 0:17                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:17                     suffix: cmd_suffix
+0:2  - 0:17                       word: word
+0:2  - 0:17                         parameter_expansion
+0:2  - 0:3                            "$"
+0:3  - 0:4                            "{"
+0:4  - 0:5                            parameter: variable_name `v`
+0:5  - 0:6                            operator: parameter_pattern_operator `#`
+0:6  - 0:16                           pattern: parameter_pattern
+0:6  - 0:16                             pattern_bracket_source
+0:6  - 0:7                                "["
+0:7  - 0:15                               members: pattern_bracket_members_source
+0:7  - 0:15                                 member: double_quoted
+0:7  - 0:8                                    "\""
+0:8  - 0:14                                   parameter_expansion
+0:8  - 0:9                                      "$"
+0:9  - 0:10                                     "{"
+0:10 - 0:11                                     parameter: variable_name `x`
+0:11 - 0:12                                     operator: parameter_value_operator `-`
+0:12 - 0:13                                     word: parameter_word
+0:12 - 0:13                                       double_quote_text `'`
+0:13 - 0:14                                     "}"
+0:14 - 0:15                                   "\""
+0:15 - 0:16                               "]"
+0:16 - 0:17                           "}"
+0:17 - 1:0      trailing: linebreak
+0:17 - 1:0        newline_list
+0:17 - 1:0          "\n"
+
+==================
+bracket quoted parameter literal dollar apostrophe
+:cst
+==================
+: ${v#["${x-$'}"]}
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:18     commands: complete_commands
+0:0  - 0:18       command: complete_command
+0:0  - 0:18         body: list
+0:0  - 0:18           and_or: and_or
+0:0  - 0:18             pipeline: pipeline
+0:0  - 0:18               sequence: pipe_sequence
+0:0  - 0:18                 command: command
+0:0  - 0:18                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:18                     suffix: cmd_suffix
+0:2  - 0:18                       word: word
+0:2  - 0:18                         parameter_expansion
+0:2  - 0:3                            "$"
+0:3  - 0:4                            "{"
+0:4  - 0:5                            parameter: variable_name `v`
+0:5  - 0:6                            operator: parameter_pattern_operator `#`
+0:6  - 0:17                           pattern: parameter_pattern
+0:6  - 0:17                             pattern_bracket_source
+0:6  - 0:7                                "["
+0:7  - 0:16                               members: pattern_bracket_members_source
+0:7  - 0:16                                 member: double_quoted
+0:7  - 0:8                                    "\""
+0:8  - 0:15                                   parameter_expansion
+0:8  - 0:9                                      "$"
+0:9  - 0:10                                     "{"
+0:10 - 0:11                                     parameter: variable_name `x`
+0:11 - 0:12                                     operator: parameter_value_operator `-`
+0:12 - 0:14                                     word: parameter_word
+0:12 - 0:14                                       double_quote_text `$'`
+0:14 - 0:15                                     "}"
+0:15 - 0:16                                   "\""
+0:16 - 0:17                               "]"
+0:17 - 0:18                           "}"
+0:18 - 1:0      trailing: linebreak
+0:18 - 1:0        newline_list
+0:18 - 1:0          "\n"
+
+==================
+odd raw pair endpoint
+:cst
+==================
+: `: [0-\\\z]`
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:14     commands: complete_commands
+0:0  - 0:14       command: complete_command
+0:0  - 0:14         body: list
+0:0  - 0:14           and_or: and_or
+0:0  - 0:14             pipeline: pipeline
+0:0  - 0:14               sequence: pipe_sequence
+0:0  - 0:14                 command: command
+0:0  - 0:14                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:14                     suffix: cmd_suffix
+0:2  - 0:14                       word: word
+0:2  - 0:14                         backquote_substitution
+0:2  - 0:3                            "\`"
+0:3  - 0:13                           body: backquote_substitution_body
+0:3  - 0:13                             complete_commands
+0:3  - 0:13                               command: complete_command
+0:3  - 0:13                                 body: list
+0:3  - 0:13                                   and_or: and_or
+0:3  - 0:13                                     pipeline: pipeline
+0:3  - 0:13                                       sequence: pipe_sequence
+0:3  - 0:13                                         command: command
+0:3  - 0:13                                           body: simple_command
+0:3  - 0:4                                              name: cmd_name
+0:3  - 0:4                                                word
+0:3  - 0:4                                                  literal `:`
+0:4  - 0:13                                             suffix: cmd_suffix
+0:5  - 0:13                                               word: word
+0:5  - 0:13                                                 pattern_bracket_source
+0:5  - 0:6                                                    "["
+0:6  - 0:12                                                   members: pattern_bracket_members_source
+0:6  - 0:11                                                     member: pattern_bracket_range_source
+0:6  - 0:7                                                        start: pattern_bracket_character_source `0`
+0:7  - 0:8                                                        operator: pattern_bracket_range_operator_source `-`
+0:8  - 0:11                                                       end: escaped_character `\\\\\\`
+0:11 - 0:12                                                     member: pattern_bracket_character_source `z`
+0:12 - 0:13                                                   "]"
+0:13 - 0:14                           "\`"
+0:14 - 1:0      trailing: linebreak
+0:14 - 1:0        newline_list
+0:14 - 1:0          "\n"
+
+==================
+odd trailing member
+:cst
+==================
+: `: [0-\\\\\\\z]`
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:18     commands: complete_commands
+0:0  - 0:18       command: complete_command
+0:0  - 0:18         body: list
+0:0  - 0:18           and_or: and_or
+0:0  - 0:18             pipeline: pipeline
+0:0  - 0:18               sequence: pipe_sequence
+0:0  - 0:18                 command: command
+0:0  - 0:18                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:18                     suffix: cmd_suffix
+0:2  - 0:18                       word: word
+0:2  - 0:18                         backquote_substitution
+0:2  - 0:3                            "\`"
+0:3  - 0:17                           body: backquote_substitution_body
+0:3  - 0:17                             complete_commands
+0:3  - 0:17                               command: complete_command
+0:3  - 0:17                                 body: list
+0:3  - 0:17                                   and_or: and_or
+0:3  - 0:17                                     pipeline: pipeline
+0:3  - 0:17                                       sequence: pipe_sequence
+0:3  - 0:17                                         command: command
+0:3  - 0:17                                           body: simple_command
+0:3  - 0:4                                              name: cmd_name
+0:3  - 0:4                                                word
+0:3  - 0:4                                                  literal `:`
+0:4  - 0:17                                             suffix: cmd_suffix
+0:5  - 0:17                                               word: word
+0:5  - 0:17                                                 pattern_bracket_source
+0:5  - 0:6                                                    "["
+0:6  - 0:16                                                   members: pattern_bracket_members_source
+0:6  - 0:12                                                     member: pattern_bracket_range_source
+0:6  - 0:7                                                        start: pattern_bracket_character_source `0`
+0:7  - 0:8                                                        operator: pattern_bracket_range_operator_source `-`
+0:8  - 0:12                                                       end: escaped_character `\\\\\\\\`
+0:12 - 0:15                                                     member: escaped_character `\\\\\\`
+0:15 - 0:16                                                     member: pattern_bracket_character_source `z`
+0:16 - 0:17                                                   "]"
+0:17 - 0:18                           "\`"
+0:18 - 1:0      trailing: linebreak
+0:18 - 1:0        newline_list
+0:18 - 1:0          "\n"
+
+==================
+parameter pattern endpoint
+:cst
+==================
+: `: ${v#[0-\\\\z]}`
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:20     commands: complete_commands
+0:0  - 0:20       command: complete_command
+0:0  - 0:20         body: list
+0:0  - 0:20           and_or: and_or
+0:0  - 0:20             pipeline: pipeline
+0:0  - 0:20               sequence: pipe_sequence
+0:0  - 0:20                 command: command
+0:0  - 0:20                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:20                     suffix: cmd_suffix
+0:2  - 0:20                       word: word
+0:2  - 0:20                         backquote_substitution
+0:2  - 0:3                            "\`"
+0:3  - 0:19                           body: backquote_substitution_body
+0:3  - 0:19                             complete_commands
+0:3  - 0:19                               command: complete_command
+0:3  - 0:19                                 body: list
+0:3  - 0:19                                   and_or: and_or
+0:3  - 0:19                                     pipeline: pipeline
+0:3  - 0:19                                       sequence: pipe_sequence
+0:3  - 0:19                                         command: command
+0:3  - 0:19                                           body: simple_command
+0:3  - 0:4                                              name: cmd_name
+0:3  - 0:4                                                word
+0:3  - 0:4                                                  literal `:`
+0:4  - 0:19                                             suffix: cmd_suffix
+0:5  - 0:19                                               word: word
+0:5  - 0:19                                                 parameter_expansion
+0:5  - 0:6                                                    "$"
+0:6  - 0:7                                                    "{"
+0:7  - 0:8                                                    parameter: variable_name `v`
+0:8  - 0:9                                                    operator: parameter_pattern_operator `#`
+0:9  - 0:18                                                   pattern: parameter_pattern
+0:9  - 0:18                                                     pattern_bracket_source
+0:9  - 0:10                                                       "["
+0:10 - 0:17                                                       members: pattern_bracket_members_source
+0:10 - 0:16                                                         member: pattern_bracket_range_source
+0:10 - 0:11                                                           start: pattern_bracket_character_source `0`
+0:11 - 0:12                                                           operator: pattern_bracket_range_operator_source `-`
+0:12 - 0:16                                                           end: escaped_character `\\\\\\\\`
+0:16 - 0:17                                                         member: pattern_bracket_character_source `z`
+0:17 - 0:18                                                       "]"
+0:18 - 0:19                                                   "}"
+0:19 - 0:20                           "\`"
+0:20 - 1:0      trailing: linebreak
+0:20 - 1:0        newline_list
+0:20 - 1:0          "\n"
+
+==================
+special marker prefixed range
+:cst
+==================
+: `: [:-\\\\z]`
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:15     commands: complete_commands
+0:0  - 0:15       command: complete_command
+0:0  - 0:15         body: list
+0:0  - 0:15           and_or: and_or
+0:0  - 0:15             pipeline: pipeline
+0:0  - 0:15               sequence: pipe_sequence
+0:0  - 0:15                 command: command
+0:0  - 0:15                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:15                     suffix: cmd_suffix
+0:2  - 0:15                       word: word
+0:2  - 0:15                         backquote_substitution
+0:2  - 0:3                            "\`"
+0:3  - 0:14                           body: backquote_substitution_body
+0:3  - 0:14                             complete_commands
+0:3  - 0:14                               command: complete_command
+0:3  - 0:14                                 body: list
+0:3  - 0:14                                   and_or: and_or
+0:3  - 0:14                                     pipeline: pipeline
+0:3  - 0:14                                       sequence: pipe_sequence
+0:3  - 0:14                                         command: command
+0:3  - 0:14                                           body: simple_command
+0:3  - 0:4                                              name: cmd_name
+0:3  - 0:4                                                word
+0:3  - 0:4                                                  literal `:`
+0:4  - 0:14                                             suffix: cmd_suffix
+0:5  - 0:14                                               word: word
+0:5  - 0:14                                                 pattern_bracket_source
+0:5  - 0:6                                                    "["
+0:6  - 0:13                                                   members: pattern_bracket_members_source
+0:6  - 0:12                                                     member: pattern_bracket_range_source
+0:6  - 0:7                                                        start: pattern_bracket_character_source `:`
+0:7  - 0:8                                                        operator: pattern_bracket_range_operator_source `-`
+0:8  - 0:12                                                       end: escaped_character `\\\\\\\\`
+0:12 - 0:13                                                     member: pattern_bracket_character_source `z`
+0:13 - 0:14                                                   "]"
+0:14 - 0:15                           "\`"
+0:15 - 1:0      trailing: linebreak
+0:15 - 1:0        newline_list
+0:15 - 1:0          "\n"
+
+==================
+escaped range start
+:cst
+==================
+: `: [\\\\-z]`
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:14     commands: complete_commands
+0:0  - 0:14       command: complete_command
+0:0  - 0:14         body: list
+0:0  - 0:14           and_or: and_or
+0:0  - 0:14             pipeline: pipeline
+0:0  - 0:14               sequence: pipe_sequence
+0:0  - 0:14                 command: command
+0:0  - 0:14                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:14                     suffix: cmd_suffix
+0:2  - 0:14                       word: word
+0:2  - 0:14                         backquote_substitution
+0:2  - 0:3                            "\`"
+0:3  - 0:13                           body: backquote_substitution_body
+0:3  - 0:13                             complete_commands
+0:3  - 0:13                               command: complete_command
+0:3  - 0:13                                 body: list
+0:3  - 0:13                                   and_or: and_or
+0:3  - 0:13                                     pipeline: pipeline
+0:3  - 0:13                                       sequence: pipe_sequence
+0:3  - 0:13                                         command: command
+0:3  - 0:13                                           body: simple_command
+0:3  - 0:4                                              name: cmd_name
+0:3  - 0:4                                                word
+0:3  - 0:4                                                  literal `:`
+0:4  - 0:13                                             suffix: cmd_suffix
+0:5  - 0:13                                               word: word
+0:5  - 0:13                                                 pattern_bracket_source
+0:5  - 0:6                                                    "["
+0:6  - 0:12                                                   members: pattern_bracket_members_source
+0:6  - 0:12                                                     member: pattern_bracket_range_source
+0:6  - 0:10                                                       start: escaped_character `\\\\\\\\`
+0:10 - 0:11                                                       operator: pattern_bracket_range_operator_source `-`
+0:11 - 0:12                                                       end: pattern_bracket_character_source `z`
+0:12 - 0:13                                                   "]"
+0:13 - 0:14                           "\`"
+0:14 - 1:0      trailing: linebreak
+0:14 - 1:0        newline_list
+0:14 - 1:0          "\n"
+
+==================
+escaped dollar endpoint
+:cst
+==================
+: `: [0-\\\$v]`
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:15     commands: complete_commands
+0:0  - 0:15       command: complete_command
+0:0  - 0:15         body: list
+0:0  - 0:15           and_or: and_or
+0:0  - 0:15             pipeline: pipeline
+0:0  - 0:15               sequence: pipe_sequence
+0:0  - 0:15                 command: command
+0:0  - 0:15                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:15                     suffix: cmd_suffix
+0:2  - 0:15                       word: word
+0:2  - 0:15                         backquote_substitution
+0:2  - 0:3                            "\`"
+0:3  - 0:14                           body: backquote_substitution_body
+0:3  - 0:14                             complete_commands
+0:3  - 0:14                               command: complete_command
+0:3  - 0:14                                 body: list
+0:3  - 0:14                                   and_or: and_or
+0:3  - 0:14                                     pipeline: pipeline
+0:3  - 0:14                                       sequence: pipe_sequence
+0:3  - 0:14                                         command: command
+0:3  - 0:14                                           body: simple_command
+0:3  - 0:4                                              name: cmd_name
+0:3  - 0:4                                                word
+0:3  - 0:4                                                  literal `:`
+0:4  - 0:14                                             suffix: cmd_suffix
+0:5  - 0:14                                               word: word
+0:5  - 0:14                                                 pattern_bracket_source
+0:5  - 0:6                                                    "["
+0:6  - 0:13                                                   members: pattern_bracket_members_source
+0:6  - 0:12                                                     member: pattern_bracket_range_source
+0:6  - 0:7                                                        start: pattern_bracket_character_source `0`
+0:7  - 0:8                                                        operator: pattern_bracket_range_operator_source `-`
+0:8  - 0:12                                                       end: escaped_character `\\\\\\$`
+0:12 - 0:13                                                     member: pattern_bracket_character_source `v`
+0:13 - 0:14                                                   "]"
+0:14 - 0:15                           "\`"
+0:15 - 1:0      trailing: linebreak
+0:15 - 1:0        newline_list
+0:15 - 1:0          "\n"
+
+==================
+parameter after escaped endpoint
+:cst
+==================
+: `: [0-\\\\\$v]`
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:17     commands: complete_commands
+0:0  - 0:17       command: complete_command
+0:0  - 0:17         body: list
+0:0  - 0:17           and_or: and_or
+0:0  - 0:17             pipeline: pipeline
+0:0  - 0:17               sequence: pipe_sequence
+0:0  - 0:17                 command: command
+0:0  - 0:17                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:17                     suffix: cmd_suffix
+0:2  - 0:17                       word: word
+0:2  - 0:17                         backquote_substitution
+0:2  - 0:3                            "\`"
+0:3  - 0:16                           body: backquote_substitution_body
+0:3  - 0:16                             complete_commands
+0:3  - 0:16                               command: complete_command
+0:3  - 0:16                                 body: list
+0:3  - 0:16                                   and_or: and_or
+0:3  - 0:16                                     pipeline: pipeline
+0:3  - 0:16                                       sequence: pipe_sequence
+0:3  - 0:16                                         command: command
+0:3  - 0:16                                           body: simple_command
+0:3  - 0:4                                              name: cmd_name
+0:3  - 0:4                                                word
+0:3  - 0:4                                                  literal `:`
+0:4  - 0:16                                             suffix: cmd_suffix
+0:5  - 0:16                                               word: word
+0:5  - 0:16                                                 pattern_bracket_source
+0:5  - 0:6                                                    "["
+0:6  - 0:15                                                   members: pattern_bracket_members_source
+0:6  - 0:12                                                     member: pattern_bracket_range_source
+0:6  - 0:7                                                        start: pattern_bracket_character_source `0`
+0:7  - 0:8                                                        operator: pattern_bracket_range_operator_source `-`
+0:8  - 0:12                                                       end: escaped_character `\\\\\\\\`
+0:12 - 0:15                                                     member: parameter_expansion
+0:13 - 0:14                                                       "$"
+0:14 - 0:15                                                       parameter: variable_name `v`
+0:15 - 0:16                                                   "]"
+0:16 - 0:17                           "\`"
+0:17 - 1:0      trailing: linebreak
+0:17 - 1:0        newline_list
+0:17 - 1:0          "\n"
+
+==================
+escaped backtick endpoint
+:cst
+==================
+: `: [0-\\\`z]`
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:15     commands: complete_commands
+0:0  - 0:15       command: complete_command
+0:0  - 0:15         body: list
+0:0  - 0:15           and_or: and_or
+0:0  - 0:15             pipeline: pipeline
+0:0  - 0:15               sequence: pipe_sequence
+0:0  - 0:15                 command: command
+0:0  - 0:15                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:15                     suffix: cmd_suffix
+0:2  - 0:15                       word: word
+0:2  - 0:15                         backquote_substitution
+0:2  - 0:3                            "\`"
+0:3  - 0:14                           body: backquote_substitution_body
+0:3  - 0:14                             complete_commands
+0:3  - 0:14                               command: complete_command
+0:3  - 0:14                                 body: list
+0:3  - 0:14                                   and_or: and_or
+0:3  - 0:14                                     pipeline: pipeline
+0:3  - 0:14                                       sequence: pipe_sequence
+0:3  - 0:14                                         command: command
+0:3  - 0:14                                           body: simple_command
+0:3  - 0:4                                              name: cmd_name
+0:3  - 0:4                                                word
+0:3  - 0:4                                                  literal `:`
+0:4  - 0:14                                             suffix: cmd_suffix
+0:5  - 0:14                                               word: word
+0:5  - 0:14                                                 pattern_bracket_source
+0:5  - 0:6                                                    "["
+0:6  - 0:13                                                   members: pattern_bracket_members_source
+0:6  - 0:12                                                     member: pattern_bracket_range_source
+0:6  - 0:7                                                        start: pattern_bracket_character_source `0`
+0:7  - 0:8                                                        operator: pattern_bracket_range_operator_source `-`
+0:8  - 0:12                                                       end: escaped_character `\\\\\\\``
+0:12 - 0:13                                                     member: pattern_bracket_character_source `z`
+0:13 - 0:14                                                   "]"
+0:14 - 0:15                           "\`"
+0:15 - 1:0      trailing: linebreak
+0:15 - 1:0        newline_list
+0:15 - 1:0          "\n"
+
+==================
+enclosing double quote fold
+:cst
+==================
+: "`: [0-\\\"]`"
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:16     commands: complete_commands
+0:0  - 0:16       command: complete_command
+0:0  - 0:16         body: list
+0:0  - 0:16           and_or: and_or
+0:0  - 0:16             pipeline: pipeline
+0:0  - 0:16               sequence: pipe_sequence
+0:0  - 0:16                 command: command
+0:0  - 0:16                   body: simple_command
+0:0  - 0:1                      name: cmd_name
+0:0  - 0:1                        word
+0:0  - 0:1                          literal `:`
+0:1  - 0:16                     suffix: cmd_suffix
+0:2  - 0:16                       word: word
+0:2  - 0:16                         double_quoted
+0:2  - 0:3                            "\""
+0:3  - 0:15                           backquote_substitution
+0:3  - 0:4                              "\`"
+0:4  - 0:14                             body: backquote_substitution_body
+0:4  - 0:14                               complete_commands
+0:4  - 0:14                                 command: complete_command
+0:4  - 0:14                                   body: list
+0:4  - 0:14                                     and_or: and_or
+0:4  - 0:14                                       pipeline: pipeline
+0:4  - 0:14                                         sequence: pipe_sequence
+0:4  - 0:14                                           command: command
+0:4  - 0:14                                             body: simple_command
+0:4  - 0:5                                                name: cmd_name
+0:4  - 0:5                                                  word
+0:4  - 0:5                                                    literal `:`
+0:5  - 0:14                                               suffix: cmd_suffix
+0:6  - 0:14                                                 word: word
+0:6  - 0:14                                                   pattern_bracket_source
+0:6  - 0:7                                                      "["
+0:7  - 0:13                                                     members: pattern_bracket_members_source
+0:7  - 0:13                                                       member: pattern_bracket_range_source
+0:7  - 0:8                                                          start: pattern_bracket_character_source `0`
+0:8  - 0:9                                                          operator: pattern_bracket_range_operator_source `-`
+0:9  - 0:13                                                         end: escaped_character `\\\\\\\"`
+0:13 - 0:14                                                     "]"
+0:14 - 0:15                             "\`"
+0:15 - 0:16                           "\""
+0:16 - 1:0      trailing: linebreak
+0:16 - 1:0        newline_list
+0:16 - 1:0          "\n"
+
+==================
+a range operator takes a class-like opener literally as its endpoint
+:cst
+==================
+case x in [x-[:alpha:]) :;; esac
+
+------------------
+
+0:0  - 1:0    program
+0:0  - 0:32     commands: complete_commands
+0:0  - 0:32       command: complete_command
+0:0  - 0:32         body: list
+0:0  - 0:32           and_or: and_or
+0:0  - 0:32             pipeline: pipeline
+0:0  - 0:32               sequence: pipe_sequence
+0:0  - 0:32                 command: command
+0:0  - 0:32                   body: compound_command
+0:0  - 0:32                     case_clause
+0:0  - 0:4                        case_keyword `case`
+0:5  - 0:6                        word: word
+0:5  - 0:6                          literal `x`
+0:7  - 0:9                        in: in
+0:7  - 0:9                          in_keyword `in`
+0:10 - 0:28                       items: case_list
+0:10 - 0:28                         item: case_item
+0:10 - 0:22                           patterns: pattern_list
+0:10 - 0:22                             word: word
+0:10 - 0:22                               pattern_bracket_source
+0:10 - 0:11                                 "["
+0:11 - 0:21                                 members: pattern_bracket_members_source
+0:11 - 0:14                                   member: pattern_bracket_range_source
+0:11 - 0:12                                     start: pattern_bracket_character_source `x`
+0:12 - 0:13                                     operator: pattern_bracket_range_operator_source `-`
+0:13 - 0:14                                     end: pattern_bracket_character_source `[`
+0:14 - 0:15                                   member: pattern_bracket_character_source `:`
+0:15 - 0:16                                   member: pattern_bracket_character_source `a`
+0:16 - 0:17                                   member: pattern_bracket_character_source `l`
+0:17 - 0:18                                   member: pattern_bracket_character_source `p`
+0:18 - 0:19                                   member: pattern_bracket_character_source `h`
+0:19 - 0:20                                   member: pattern_bracket_character_source `a`
+0:20 - 0:21                                   member: pattern_bracket_character_source `:`
+0:21 - 0:22                                 "]"
+0:22 - 0:23                           ")"
+0:23 - 0:25                           body: compound_list
+0:24 - 0:25                             body: term
+0:24 - 0:25                               and_or: and_or
+0:24 - 0:25                                 pipeline: pipeline
+0:24 - 0:25                                   sequence: pipe_sequence
+0:24 - 0:25                                     command: command
+0:24 - 0:25                                       body: simple_command
+0:24 - 0:25                                         name: cmd_name
+0:24 - 0:25                                           word
+0:24 - 0:25                                             literal `:`
+0:25 - 0:27                           terminator: dsemi `;;`
+0:28 - 0:32                       esac_keyword `esac`
+0:32 - 1:0      trailing: linebreak
+0:32 - 1:0        newline_list
+0:32 - 1:0          "\n"
+
+==================
+a hyphen after a character class is a literal member
+==================
+case x in [[:alpha:]-a]) :;; esac
+
+------------------
+
+(program commands: (complete_commands command: (complete_command body: (list and_or: (and_or pipeline: (pipeline sequence: (pipe_sequence command: (command body: (compound_command (case_clause (case_keyword) word: (word (literal)) in: (in (in_keyword)) items: (case_list item: (case_item patterns: (pattern_list word: (word (pattern_bracket_source members: (pattern_bracket_members_source member: (pattern_character_class_source content: (pattern_character_class_content_source)) member: (pattern_bracket_hyphen_source) member: (pattern_bracket_character_source))))) body: (compound_list body: (term and_or: (and_or pipeline: (pipeline sequence: (pipe_sequence command: (command body: (simple_command name: (cmd_name (word (literal)))))))))) terminator: (dsemi))) (esac_keyword)))))))))) trailing: (linebreak (newline_list)))
+
+==================
+consecutive classes and repeated colon members share one bracket expression
+==================
+: [[:alpha:][:digit:]] [a[:b[:c] [[:a:][::]x]
+
+------------------
+
+(program commands: (complete_commands command: (complete_command body: (list and_or: (and_or pipeline: (pipeline sequence: (pipe_sequence command: (command body: (simple_command name: (cmd_name (word (literal))) suffix: (cmd_suffix word: (word (pattern_bracket_source members: (pattern_bracket_members_source member: (pattern_character_class_source content: (pattern_character_class_content_source)) member: (pattern_character_class_source content: (pattern_character_class_content_source))))) word: (word (pattern_bracket_source members: (pattern_bracket_members_source member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source)))) word: (word (pattern_bracket_source members: (pattern_bracket_members_source member: (pattern_character_class_source content: (pattern_character_class_content_source)) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source) member: (pattern_bracket_character_source))) (literal))))))))))) trailing: (linebreak (newline_list)))

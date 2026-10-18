@@ -1,0 +1,1434 @@
+==================
+quoted delimiter forms disable body expansion structure
+==================
+
+cat <<'ONE'
+$name
+ONE
+cat <<"TWO"
+$(command)
+TWO
+cat <<E\OF
+literal
+EOF
+cat <<$'STOP'
+literal
+STOP
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))))))))))
+    separator: (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))))))))))
+    separator: (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))))))))))
+    separator: (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+a leading escaped delimiter character remains quoted
+==================
+
+cat <<\EOF
+literal $name
+EOF
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+here-document delimiters retain bracket source
+==================
+
+cat <<[abc]
+body
+[abc]
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text)))))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+double-quoted parameter delimiters preserve literal quotes
+==================
+
+cat <<"${x:-'EOF'}"
+body
+${x:-'EOF'}
+after
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))))))))))
+    separator: (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+double-quoted parameter delimiters remove nested double quotes
+==================
+
+cat <<"${x:-"ab"}"
+body
+${x:-ab}
+after
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))))))))))
+    separator: (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+delimiter command substitutions recognize empty and nested case commands
+==================
+
+cat <<$(case x in esac)
+body
+$(case x in esac)
+cat <<$(if test; then case y in esac; fi)
+body
+$(if test; then case y in esac; fi)
+cat <<$(! case z in esac)
+body
+$(! case z in esac)
+cat <<$(printf $(case w in esac))
+body
+$(printf $(case w in esac))
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text))))))))))))
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text))))))))))))
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text))))))))))))
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text)))))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+a parameter pattern parenthesis does not consume its closing brace
+==================
+
+cat <<${value#(}
+body
+${value#(}
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+delimiter lookahead keeps subshell case closers and following command words
+==================
+
+cat <<$((case x in x)esac)) >out arg
+body
+$((case x in x)esac))
+echo after
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text))))
+                    (io_redirect
+                      (io_file
+                        (filename
+                          (word
+                            (literal)))))
+                    (word
+                      (literal))))))))))
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (word
+                      (literal)))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+here-document delimiters preserve bracket fallback source ownership
+==================
+
+cat <<[[.
+first
+[[.
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text)))))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_body
+            (here_document_text))
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+here-document delimiter tildes remain literal outside embedded expansions
+==================
+
+cat <<~root/path <<-~"user" <<~${value:-~fallback}
+~root/path
+	~user
+~${value:-~fallback}
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))
+                  (cmd_suffix
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text))))
+                    (io_redirect
+                      (io_here
+                        (dlessdash)
+                        (here_end
+                          (here_end_text))))
+                    (io_redirect
+                      (io_here
+                        (dless)
+                        (here_end
+                          (here_end_text)))))))))))))
+  (linebreak
+    (newline_list
+      (here_document_sequence
+        (here_document_line_end)
+        (here_document
+          (here_document_end
+            (here_document_end_text)))
+        (here_document
+          (here_document_end
+            (here_document_end_text)))
+        (here_document
+          (here_document_end
+            (here_document_end_text)))))))
+
+==================
+arithmetic here-document delimiters retain parameter value quoting and remove pattern quoting
+==================
+
+: <<"$((1+${x:-'2'}))" <<$((1+${x:-a\qb})) <<$((1+${x#'2'}))
+$quoted
+$((1+${x:-'2'}))
+$escaped
+$((1+${x:-a\qb}))
+$pattern
+$((1+${x#2}))
+: after
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))))))))))
+    separator: (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+an unquoted delimiter reads a doubled dollar before a brace as one parameter
+==================
+
+cat <<E$${
+$x
+E$${
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (parameter_expansion
+              parameter: (variable_name)))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+a double-quoted delimiter reads a doubled dollar before a parenthesis as one parameter
+==================
+
+cat <<"$$("
+$x
+$$(
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+delimiter command spelling does not require a complete if command
+==================
+cat <<$(if)
+body
+$(if)
+
+------------------
+
+(program commands: (complete_commands
+  command: (complete_command
+    body: (list
+      and_or: (and_or
+        pipeline: (pipeline
+          sequence: (pipe_sequence
+            command: (command
+              body: (simple_command
+                name: (cmd_name (word (literal)))
+                suffix: (cmd_suffix
+                  redirect: (io_redirect
+                    body: (io_here
+                      operator: (dless)
+                      end: (here_end word: (here_end_text))))))))))))) trailing: (linebreak (newline_list (here_document_sequence line_end: (here_document_line_end) document: (here_document body: (here_document_body (here_document_text)) end: (here_document_end (here_document_end_text)))))))
+
+
+==================
+a trailing delimiter backslash is retained at EOF
+==================
+cat <<\
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name (word (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        document: (here_document)))))
+
+==================
+an escaped arithmetic closing parenthesis is retained in a delimiter
+==================
+cat <<$((\)))
+body
+$((\)))
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name (word (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body (quoted_here_document_text))
+          end: (here_document_end (here_document_end_text)))))))
+
+==================
+single quotes protect backquotes inside a nonexpanded delimiter
+==================
+cat <<`'a`b'`
+body
+`a`b`
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name (word (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body (quoted_here_document_text))
+          end: (here_document_end (here_document_end_text)))))))
+
+==================
+backquote delimiter escapes undergo one quote removal
+==================
+cat <<`a\\b`
+body
+`a\b`
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name (word (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body (quoted_here_document_text))
+          end: (here_document_end (here_document_end_text)))))))
+
+==================
+a raw parameter operator quote does not quote the here-document body
+==================
+cat <<${a'}
+$v
+${a'}
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name (word (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body (parameter_expansion parameter: (variable_name)))
+          end: (here_document_end (here_document_end_text)))))))
+
+==================
+an escaped arithmetic parenthesis cannot close the delimiter
+:error
+==================
+cat <<$((\))
+------------------
+
+
+
+==================
+an unclosed single quote before a delimiter backquote remains incomplete
+:error
+==================
+cat <<`printf '`
+------------------
+
+
+
+==================
+quotes after a raw parameter prefix still require closing
+:error
+==================
+cat <<${'a'}
+------------------
+
+==================
+a control escape with a multibyte operand masks only its first byte
+==================
+
+cat <<$'E\cé'
+E	
+echo done
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text)
+            (quoted_here_document_text)))))))
+
+==================
+a closing parenthesis ends the substitution delimiter group across an open parameter
+==================
+cat <<E$(${x:-)}
+body
+E$(${x:-)}
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name (word (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body (here_document_text))
+          end: (here_document_end (here_document_end_text)))))))
+
+==================
+an unmatched closing parenthesis after a substitution delimiter is not part of the word
+:error
+==================
+cat <<E$(${x:-)})
+body
+E$(${x:-)})
+
+------------------
+
+==================
+a backquote closes an unfinished delimiter double quote without quoting the body
+==================
+
+cat <<`"x`
+$v
+`x`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (parameter_expansion
+              parameter: (variable_name)))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+a backquote closes an unfinished delimiter parameter quote without quoting the body
+==================
+
+cat <<`E ${x:-"`
+$v
+`E ${x:-`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (parameter_expansion
+              parameter: (variable_name)))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+completed delimiter quotes and escapes still quote the body around an unfinished double quote
+==================
+
+cat <<`"x"` <<'p'`"x` <<`"x`"s" <<`"""x` <<`"x\$y` <<`"x\qy` <<`"x'"y`
+$v
+`x`
+$v
+p`x`
+$v
+`x`s
+$v
+`x`
+$v
+`x$y`
+$v
+`x\qy`
+$v
+`x'y`
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+closed double quotes inside an arithmetic delimiter parameter quote the body
+==================
+
+cat <<$((1+${x:-"a"}))
+$v
+$((1+${x:-a}))
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
+a quoted multiline delimiter owns its internal newline
+==================
+cat <<'a
+b'
+body
+a
+b
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name (word (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body (quoted_here_document_text))
+          end: (here_document_end (here_document_end_text)))))))
+
+==================
+a multiline substitution spelling is a literal unquoted delimiter
+==================
+cat <<$(x
+y)
+body
+$(x
+y)
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name (word (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body (here_document_text))
+          end: (here_document_end (here_document_end_text)))))))
+
+==================
+a multibyte invalid parameter prefix does not reduce to an empty parameter delimiter
+==================
+cat <<"${é}"
+${}
+printf AFTER
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name (word (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body
+            (quoted_here_document_text)
+            (quoted_here_document_text)))))))
+
+==================
+a multibyte character after the length prefix remains in the delimiter
+==================
+cat <<"${#é}"
+BODY
+${#é}
+
+------------------
+
+(program
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name (word (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end word: (here_end_text)))))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (quoted_here_document_body (quoted_here_document_text))
+          end: (here_document_end (here_document_end_text)))))))

@@ -1,0 +1,1852 @@
+==================
+every command has the complete command hierarchy
+==================
+
+command argument
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+and-or operators share one source-ordered list
+==================
+
+first && second || third &&
+# before the final pipeline
+  fourth
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))
+          operator: (and_if)
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))
+          operator: (or_if)
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))
+          operator: (and_if)
+          (linebreak
+            (newline_list
+              (comment
+                (comment_text))))
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+list separators retain internal and terminal positions
+==================
+
+first; second & third;
+fourth &
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal))))))))
+        separator: (separator_op)
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal))))))))
+        separator: (separator_op)
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))
+      terminator: (separator_op))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))
+      terminator: (separator_op)))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+only explicit separators start another command
+==================
+
+./first one; second two
+third three
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))))))))
+        separator: (separator_op)
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+newlines separate complete commands
+==================
+
+first
+# between complete commands
+second
+
+third
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal))))))))))
+    separator: (newline_list
+      (comment
+        (comment_text)))
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+pipeline negation is distinct from literal exclamation marks
+==================
+
+! first one | second two
+!echo !
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            negation: (bang)
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+compound commands occupy command positions and nest
+==================
+
+(first) | { second; } && if condition; then
+  while more; do
+    case value in
+      one) for item in a b; do use "$item"; done ;;
+    esac
+  done
+fi
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (subshell
+                    body: (compound_list
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))))))))
+              command: (command
+                body: (compound_command
+                  (brace_group
+                    body: (compound_list
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      terminator: (separator
+                        operator: (separator_op))))))))
+          operator: (and_if)
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (if_clause
+                    (if_keyword)
+                    condition: (compound_list
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      terminator: (separator
+                        operator: (separator_op)))
+                    (then_keyword)
+                    consequence: (compound_list
+                      leading: (linebreak
+                        (newline_list))
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (compound_command
+                                  (while_clause
+                                    (while_keyword)
+                                    condition: (compound_list
+                                      body: (term
+                                        and_or: (and_or
+                                          pipeline: (pipeline
+                                            sequence: (pipe_sequence
+                                              command: (command
+                                                body: (simple_command
+                                                  name: (cmd_name
+                                                    (word
+                                                      (literal)))))))))
+                                      terminator: (separator
+                                        operator: (separator_op)))
+                                    body: (do_group
+                                      (do_keyword)
+                                      body: (compound_list
+                                        leading: (linebreak
+                                          (newline_list))
+                                        body: (term
+                                          and_or: (and_or
+                                            pipeline: (pipeline
+                                              sequence: (pipe_sequence
+                                                command: (command
+                                                  body: (compound_command
+                                                    (case_clause
+                                                      (case_keyword)
+                                                      word: (word
+                                                        (literal))
+                                                      in: (in
+                                                        (in_keyword))
+                                                      (linebreak
+                                                        (newline_list))
+                                                      items: (case_list
+                                                        item: (case_item
+                                                          patterns: (pattern_list
+                                                            word: (word
+                                                              (literal)))
+                                                          body: (compound_list
+                                                            body: (term
+                                                              and_or: (and_or
+                                                                pipeline: (pipeline
+                                                                  sequence: (pipe_sequence
+                                                                    command: (command
+                                                                      body: (compound_command
+                                                                        (for_clause
+                                                                          (for_keyword)
+                                                                          name: (name)
+                                                                          in: (in
+                                                                            (in_keyword))
+                                                                          words: (wordlist
+                                                                            word: (word
+                                                                              (literal))
+                                                                            word: (word
+                                                                              (literal)))
+                                                                          separator: (sequential_sep)
+                                                                          body: (do_group
+                                                                            (do_keyword)
+                                                                            body: (compound_list
+                                                                              body: (term
+                                                                                and_or: (and_or
+                                                                                  pipeline: (pipeline
+                                                                                    sequence: (pipe_sequence
+                                                                                      command: (command
+                                                                                        body: (simple_command
+                                                                                          name: (cmd_name
+                                                                                            (word
+                                                                                              (literal)))
+                                                                                          suffix: (cmd_suffix
+                                                                                            word: (word
+                                                                                              (double_quoted
+                                                                                                (parameter_expansion
+                                                                                                  parameter: (variable_name)))))))))))
+                                                                              terminator: (separator
+                                                                                operator: (separator_op)))
+                                                                            (done_keyword))))))))))
+                                                          terminator: (dsemi)
+                                                          (linebreak
+                                                            (newline_list))))
+                                                      (esac_keyword))))))))
+                                        terminator: (separator
+                                          newlines: (newline_list)))
+                                      (done_keyword)))))))))
+                      terminator: (separator
+                        newlines: (newline_list)))
+                    (fi_keyword))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+function definitions can precede other commands in one list
+==================
+
+greet() { :; }; : | greet && greet; greet &
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (function_definition
+                  name: (fname)
+                  body: (function_body
+                    body: (compound_command
+                      (brace_group
+                        body: (compound_list
+                          body: (term
+                            and_or: (and_or
+                              pipeline: (pipeline
+                                sequence: (pipe_sequence
+                                  command: (command
+                                    body: (simple_command
+                                      name: (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          terminator: (separator
+                            operator: (separator_op)))))))))))
+        separator: (separator_op)
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))
+          operator: (and_if)
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal))))))))
+        separator: (separator_op)
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))
+      terminator: (separator_op)))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+command substitutions use the same command hierarchy
+==================
+
+echo $(first | second && third; fourth)
+echo $(first;)
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (command_substitution
+                        body: (command_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (simple_command
+                                          name: (cmd_name
+                                            (word
+                                              (literal)))))
+                                      command: (command
+                                        body: (simple_command
+                                          name: (cmd_name
+                                            (word
+                                              (literal)))))))
+                                  operator: (and_if)
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (simple_command
+                                          name: (cmd_name
+                                            (word
+                                              (literal))))))))
+                                separator: (separator_op)
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (simple_command
+                                          name: (cmd_name
+                                            (word
+                                              (literal))))))))))))))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (command_substitution
+                        body: (command_substitution_body
+                          (complete_commands
+                            command: (complete_command
+                              body: (list
+                                and_or: (and_or
+                                  pipeline: (pipeline
+                                    sequence: (pipe_sequence
+                                      command: (command
+                                        body: (simple_command
+                                          name: (cmd_name
+                                            (word
+                                              (literal)))))))))
+                              terminator: (separator_op)))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+compound-list terms keep internal and trailing separators in source order
+==================
+
+holder() {
+  first=text || recover
+  second=text && recover; third &
+  # between commands
+  fourth;
+}
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (brace_group
+                        (compound_list
+                          (linebreak
+                            (newline_list))
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_prefix
+                                        (assignment_word
+                                          (variable_name)
+                                          (assignment_value
+                                            (literal))))))))
+                              (or_if)
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal))))))))
+                            (separator
+                              (newline_list))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_prefix
+                                        (assignment_word
+                                          (variable_name)
+                                          (assignment_value
+                                            (literal))))))))
+                              (and_if)
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal))))))))
+                            (separator
+                              (separator_op))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal))))))))
+                            (separator
+                              (separator_op)
+                              (linebreak
+                                (newline_list
+                                  (comment
+                                    (comment_text)))))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          (separator
+                            (separator_op)
+                            (linebreak
+                              (newline_list)))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+subshell and reserved contexts reuse the public term hierarchy
+==================
+
+(first
+ second)
+if condition; then
+  consequence
+elif alternative; then
+  other
+else
+  final
+fi
+while condition; do
+  body
+done
+case value in
+  item) first
+    second;;
+esac
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (subshell
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal))))))))
+                        (separator
+                          (newline_list))
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal))))))))))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (if_clause
+                    (if_keyword)
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      (separator
+                        (separator_op)))
+                    (then_keyword)
+                    (compound_list
+                      (linebreak
+                        (newline_list))
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      (separator
+                        (newline_list)))
+                    (else_part
+                      (elif_keyword)
+                      (compound_list
+                        (term
+                          (and_or
+                            (pipeline
+                              (pipe_sequence
+                                (command
+                                  (simple_command
+                                    (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        (separator
+                          (separator_op)))
+                      (then_keyword)
+                      (compound_list
+                        (linebreak
+                          (newline_list))
+                        (term
+                          (and_or
+                            (pipeline
+                              (pipe_sequence
+                                (command
+                                  (simple_command
+                                    (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        (separator
+                          (newline_list)))
+                      (else_part
+                        (else_keyword)
+                        (compound_list
+                          (linebreak
+                            (newline_list))
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          (separator
+                            (newline_list)))))
+                    (fi_keyword)))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (while_clause
+                    (while_keyword)
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      (separator
+                        (separator_op)))
+                    (do_group
+                      (do_keyword)
+                      (compound_list
+                        (linebreak
+                          (newline_list))
+                        (term
+                          (and_or
+                            (pipeline
+                              (pipe_sequence
+                                (command
+                                  (simple_command
+                                    (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        (separator
+                          (newline_list)))
+                      (done_keyword))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (case_clause
+                    (case_keyword)
+                    (word
+                      (literal))
+                    (in
+                      (in_keyword))
+                    (linebreak
+                      (newline_list))
+                    (case_list
+                      (case_item
+                        (pattern_list
+                          (word
+                            (literal)))
+                        (compound_list
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal))))))))
+                            (separator
+                              (newline_list))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal))))))))))
+                        (dsemi)
+                        (linebreak
+                          (newline_list))))
+                    (esac_keyword))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+assignment-led AND-OR lists remain intact after preceding brace commands
+==================
+
+regular_file_identity() {
+  CURRENT_FILE_ID=
+  [ -f "$1" ] && [ ! -L "$1" ] ||
+    return 1
+  file_owner=$(stat -f '%u' "$1" 2>/dev/null) || return 1
+  file_mode=$(stat -f '%Lp' "$1" 2>/dev/null) || return 1
+}
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (brace_group
+                        (compound_list
+                          (linebreak
+                            (newline_list))
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_prefix
+                                        (assignment_word
+                                          (variable_name))))))))
+                            (separator
+                              (newline_list))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))
+                                      (cmd_suffix
+                                        (word
+                                          (literal))
+                                        (word
+                                          (double_quoted
+                                            (parameter_expansion
+                                              (positional_parameter))))
+                                        (word
+                                          (literal)))))))
+                              (and_if)
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))
+                                      (cmd_suffix
+                                        (word
+                                          (literal))
+                                        (word
+                                          (literal))
+                                        (word
+                                          (double_quoted
+                                            (parameter_expansion
+                                              (positional_parameter))))
+                                        (word
+                                          (literal)))))))
+                              (or_if)
+                              (linebreak
+                                (newline_list))
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))
+                                      (cmd_suffix
+                                        (word
+                                          (literal))))))))
+                            (separator
+                              (newline_list))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_prefix
+                                        (assignment_word
+                                          (variable_name)
+                                          (assignment_value
+                                            (command_substitution
+                                              (command_substitution_body
+                                                (complete_commands
+                                                  (complete_command
+                                                    (list
+                                                      (and_or
+                                                        (pipeline
+                                                          (pipe_sequence
+                                                            (command
+                                                              (simple_command
+                                                                (cmd_name
+                                                                  (word
+                                                                    (literal)))
+                                                                (cmd_suffix
+                                                                  (word
+                                                                    (literal))
+                                                                  (word
+                                                                    (single_quoted
+                                                                      (single_quote_content)))
+                                                                  (word
+                                                                    (double_quoted
+                                                                      (parameter_expansion
+                                                                        (positional_parameter))))
+                                                                  (io_redirect
+                                                                    (io_number)
+                                                                    (io_file
+                                                                      (filename
+                                                                        (word
+                                                                          (literal)))))))))))))))))))))))
+                              (or_if)
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))
+                                      (cmd_suffix
+                                        (word
+                                          (literal))))))))
+                            (separator
+                              (newline_list))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_prefix
+                                        (assignment_word
+                                          (variable_name)
+                                          (assignment_value
+                                            (command_substitution
+                                              (command_substitution_body
+                                                (complete_commands
+                                                  (complete_command
+                                                    (list
+                                                      (and_or
+                                                        (pipeline
+                                                          (pipe_sequence
+                                                            (command
+                                                              (simple_command
+                                                                (cmd_name
+                                                                  (word
+                                                                    (literal)))
+                                                                (cmd_suffix
+                                                                  (word
+                                                                    (literal))
+                                                                  (word
+                                                                    (single_quoted
+                                                                      (single_quote_content)))
+                                                                  (word
+                                                                    (double_quoted
+                                                                      (parameter_expansion
+                                                                        (positional_parameter))))
+                                                                  (io_redirect
+                                                                    (io_number)
+                                                                    (io_file
+                                                                      (filename
+                                                                        (word
+                                                                          (literal)))))))))))))))))))))))
+                              (or_if)
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))
+                                      (cmd_suffix
+                                        (word
+                                          (literal)))))))))
+                          (separator
+                            (newline_list))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+control operators delimit commands without surrounding blanks
+==================
+
+first one|second two&&
+  third three||
+# between connectors
+  fourth four
+fifth five&sixth six;seventh seven
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))
+          operator: (and_if)
+          (linebreak
+            (newline_list))
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))
+          operator: (or_if)
+          (linebreak
+            (newline_list
+              (comment
+                (comment_text))))
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))))))))
+        separator: (separator_op)
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))))))))
+        separator: (separator_op)
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+pipelines permit linebreaks after pipe operators
+==================
+
+first |
+# between pipeline commands
+  second |
+
+  third
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))
+              (linebreak
+                (newline_list
+                  (comment
+                    (comment_text))))
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))
+              (linebreak
+                (newline_list))
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+trailing blanks before separating newlines stay layout
+==================
+
+first one 
+second two	
+third three
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+compound command tails leave horizontal layout to following separators
+==================
+
+if :; then :; fi & after_if
+(:)
+
+after_blank
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (if_clause
+                    (if_keyword)
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      (separator
+                        (separator_op)))
+                    (then_keyword)
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      (separator
+                        (separator_op)))
+                    (fi_keyword)))))))
+        (separator_op)
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (subshell
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal))))))))))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (simple_command
+                  (cmd_name
+                    (word
+                      (literal)))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+escaped characters begin commands after separators
+==================
+
+cd x; \rm -f y
+a
+\x
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))))))))
+        separator: (separator_op)
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (escaped_character)
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (literal))
+                    word: (word
+                      (literal))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (escaped_character)))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a bang after a pipe requires a new pipeline head
+:error
+==================
+
+echo hi | !
+
+------------------
+
+
+
+==================
+a bang cannot prefix a command after a pipe
+:error
+==================
+
+echo hi | ! x
+
+------------------
+
+
+
+==================
+a pipeline cannot repeat its leading bang
+:error
+==================
+
+! ! x
+
+------------------
+
+
+
+==================
+compound list regression
+==================
+regular_file_identity() {
+  CURRENT_FILE_ID=
+  [ -f "$1" ] && [ ! -L "$1" ] ||
+    return 1
+  file_owner=$(stat -f '%u' "$1" 2>/dev/null) || return 1
+  file_mode=$(stat -f '%Lp' "$1" 2>/dev/null) || return 1
+}
+
+------------------
+
+(program
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (function_definition
+                  (fname)
+                  (function_body
+                    (compound_command
+                      (brace_group
+                        (compound_list
+                          (linebreak
+                            (newline_list))
+                          (term
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_prefix
+                                        (assignment_word
+                                          (variable_name))))))))
+                            (separator
+                              (newline_list))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))
+                                      (cmd_suffix
+                                        (word
+                                          (literal))
+                                        (word
+                                          (double_quoted
+                                            (parameter_expansion
+                                              (positional_parameter))))
+                                        (word
+                                          (literal)))))))
+                              (and_if)
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))
+                                      (cmd_suffix
+                                        (word
+                                          (literal))
+                                        (word
+                                          (literal))
+                                        (word
+                                          (double_quoted
+                                            (parameter_expansion
+                                              (positional_parameter))))
+                                        (word
+                                          (literal)))))))
+                              (or_if)
+                              (linebreak
+                                (newline_list))
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))
+                                      (cmd_suffix
+                                        (word
+                                          (literal))))))))
+                            (separator
+                              (newline_list))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_prefix
+                                        (assignment_word
+                                          (variable_name)
+                                          (assignment_value
+                                            (command_substitution
+                                              (command_substitution_body
+                                                (complete_commands
+                                                  (complete_command
+                                                    (list
+                                                      (and_or
+                                                        (pipeline
+                                                          (pipe_sequence
+                                                            (command
+                                                              (simple_command
+                                                                (cmd_name
+                                                                  (word
+                                                                    (literal)))
+                                                                (cmd_suffix
+                                                                  (word
+                                                                    (literal))
+                                                                  (word
+                                                                    (single_quoted
+                                                                      (single_quote_content)))
+                                                                  (word
+                                                                    (double_quoted
+                                                                      (parameter_expansion
+                                                                        (positional_parameter))))
+                                                                  (io_redirect
+                                                                    (io_number)
+                                                                    (io_file
+                                                                      (filename
+                                                                        (word
+                                                                          (literal)))))))))))))))))))))))
+                              (or_if)
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))
+                                      (cmd_suffix
+                                        (word
+                                          (literal))))))))
+                            (separator
+                              (newline_list))
+                            (and_or
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_prefix
+                                        (assignment_word
+                                          (variable_name)
+                                          (assignment_value
+                                            (command_substitution
+                                              (command_substitution_body
+                                                (complete_commands
+                                                  (complete_command
+                                                    (list
+                                                      (and_or
+                                                        (pipeline
+                                                          (pipe_sequence
+                                                            (command
+                                                              (simple_command
+                                                                (cmd_name
+                                                                  (word
+                                                                    (literal)))
+                                                                (cmd_suffix
+                                                                  (word
+                                                                    (literal))
+                                                                  (word
+                                                                    (single_quoted
+                                                                      (single_quote_content)))
+                                                                  (word
+                                                                    (double_quoted
+                                                                      (parameter_expansion
+                                                                        (positional_parameter))))
+                                                                  (io_redirect
+                                                                    (io_number)
+                                                                    (io_file
+                                                                      (filename
+                                                                        (word
+                                                                          (literal)))))))))))))))))))))))
+                              (or_if)
+                              (pipeline
+                                (pipe_sequence
+                                  (command
+                                    (simple_command
+                                      (cmd_name
+                                        (word
+                                          (literal)))
+                                      (cmd_suffix
+                                        (word
+                                          (literal)))))))))
+                          (separator
+                            (newline_list))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+malformed bang past pipeline head
+:error
+==================
+before alpha
+! ! alpha
+after omega
+
+------------------
+
+
+
+==================
+malformed missing pipe command after comment
+:error
+==================
+before alpha
+broken | # pending
+;
+after omega
+
+------------------
+
+
+
+==================
+malformed missing and command after linebreak
+:error
+==================
+before alpha
+broken &&
+;
+after omega
+
+------------------
+
+
+
+==================
+malformed missing command after operator run
+:error
+==================
+before alpha
+broken && ! | ;
+after omega
+
+------------------
+
+
+
+==================
+malformed missing negated command before newline
+:error
+==================
+before alpha
+! # pending
+after omega
+
+------------------
+
+
+
+==================
+missing word and if before eof
+:error
+==================
+alpha &&
+
+------------------
+
+
+
+==================
+missing word or if before blank line
+:error
+==================
+alpha ||
+
+
+------------------
+
+
+
+==================
+missing word pipe before eof
+:error
+==================
+alpha |
+
+------------------
+
+
+
+==================
+missing word and if before comment line
+:error
+==================
+alpha &&
+# pending
+
+------------------

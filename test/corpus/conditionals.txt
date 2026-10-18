@@ -1,0 +1,356 @@
+==================
+if clauses retain conditions consequences and alternatives
+==================
+
+if first && second; then
+  consequence
+elif other
+then
+  alternative
+else
+  fallback
+fi
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (if_clause
+                    (if_keyword)
+                    condition: (compound_list
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))
+                          operator: (and_if)
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      terminator: (separator
+                        operator: (separator_op)))
+                    (then_keyword)
+                    consequence: (compound_list
+                      leading: (linebreak
+                        (newline_list))
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      terminator: (separator
+                        newlines: (newline_list)))
+                    alternative: (else_part
+                      (elif_keyword)
+                      condition: (compound_list
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        terminator: (separator
+                          newlines: (newline_list)))
+                      (then_keyword)
+                      consequence: (compound_list
+                        leading: (linebreak
+                          (newline_list))
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        terminator: (separator
+                          newlines: (newline_list)))
+                      alternative: (else_part
+                        (else_keyword)
+                        body: (compound_list
+                          leading: (linebreak
+                            (newline_list))
+                          body: (term
+                            and_or: (and_or
+                              pipeline: (pipeline
+                                sequence: (pipe_sequence
+                                  command: (command
+                                    body: (simple_command
+                                      name: (cmd_name
+                                        (word
+                                          (literal)))))))))
+                          terminator: (separator
+                            newlines: (newline_list)))))
+                    (fi_keyword))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a terminal elif remains the alternative of its if clause
+==================
+
+if :; then :; elif :; then :; fi
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (if_clause
+                    (if_keyword)
+                    condition: (compound_list
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      terminator: (separator
+                        operator: (separator_op)))
+                    (then_keyword)
+                    consequence: (compound_list
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      terminator: (separator
+                        operator: (separator_op)))
+                    alternative: (else_part
+                      (elif_keyword)
+                      condition: (compound_list
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        terminator: (separator
+                          operator: (separator_op)))
+                      (then_keyword)
+                      consequence: (compound_list
+                        body: (term
+                          and_or: (and_or
+                            pipeline: (pipeline
+                              sequence: (pipe_sequence
+                                command: (command
+                                  body: (simple_command
+                                    name: (cmd_name
+                                      (word
+                                        (literal)))))))))
+                        terminator: (separator
+                          operator: (separator_op))))
+                    (fi_keyword))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a closing spelling in an assignment value leaves the real closer
+==================
+
+if a; then y=fi
+fi
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (if_clause
+                    (if_keyword)
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      (separator
+                        (separator_op)))
+                    (then_keyword)
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_prefix
+                                    (assignment_word
+                                      (variable_name)
+                                      (assignment_value
+                                        (literal))))))))))
+                      (separator
+                        (newline_list)))
+                    (fi_keyword))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+trailing blanks separate and terminate an if body
+==================
+
+if :; then
+first one 
+second two 
+fi
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (if_clause
+                    (if_keyword)
+                    condition: (compound_list
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      terminator: (separator
+                        operator: (separator_op)))
+                    (then_keyword)
+                    consequence: (compound_list
+                      leading: (linebreak
+                        (newline_list))
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))
+                                  suffix: (cmd_suffix
+                                    word: (word
+                                      (literal))))))))
+                        separator: (separator
+                          newlines: (newline_list))
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))
+                                  suffix: (cmd_suffix
+                                    word: (word
+                                      (literal)))))))))
+                      terminator: (separator
+                        newlines: (newline_list)))
+                    (fi_keyword))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a second fi after a completed conditional requires recovery
+:error
+==================
+
+if a; then b; fi;fi
+
+------------------
+
+
+
+==================
+malformed reserved closer command
+:error
+==================
+before alpha
+fi
+after omega
+
+------------------
+
+
+
+==================
+missing word comment only condition
+:error
+==================
+if # pending
+then :; fi
+
+------------------
+
+
+
+==================
+unterminated compound command
+:error
+==================
+if condition; then
+inside
+after
+
+------------------

@@ -1,0 +1,524 @@
+==================
+subshells and brace groups share a compound list hierarchy
+==================
+
+(first; second)
+{
+  third
+  fourth;
+}
+( { nested; } )
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (subshell
+                    body: (compound_list
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal))))))))
+                        separator: (separator
+                          operator: (separator_op))
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal))))))))))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (brace_group
+                    body: (compound_list
+                      leading: (linebreak
+                        (newline_list))
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal))))))))
+                        separator: (separator
+                          newlines: (newline_list))
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      terminator: (separator
+                        operator: (separator_op)
+                        linebreak: (linebreak
+                          (newline_list))))))))))))
+    separator: (newline_list)
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (subshell
+                    body: (compound_list
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (compound_command
+                                  (brace_group
+                                    body: (compound_list
+                                      body: (term
+                                        and_or: (and_or
+                                          pipeline: (pipeline
+                                            sequence: (pipe_sequence
+                                              command: (command
+                                                body: (simple_command
+                                                  name: (cmd_name
+                                                    (word
+                                                      (literal)))))))))
+                                      terminator: (separator
+                                        operator: (separator_op))))))))))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a compound command can close a reserved-delimited compound list without a separator
+==================
+
+{ (false) }
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (brace_group
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (compound_command
+                                  (subshell
+                                    (compound_list
+                                      (term
+                                        (and_or
+                                          (pipeline
+                                            (pipe_sequence
+                                              (command
+                                                (simple_command
+                                                  (cmd_name
+                                                    (word
+                                                      (literal)))))))))))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+a right brace glued to a compound end closes the group
+==================
+
+{ (x)}
+{ x || (y)}
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (brace_group
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (compound_command
+                                  (subshell
+                                    (compound_list
+                                      (term
+                                        (and_or
+                                          (pipeline
+                                            (pipe_sequence
+                                              (command
+                                                (simple_command
+                                                  (cmd_name
+                                                    (word
+                                                      (literal))))))))))))))))))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (brace_group
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))))))
+                          (or_if)
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (compound_command
+                                  (subshell
+                                    (compound_list
+                                      (term
+                                        (and_or
+                                          (pipeline
+                                            (pipe_sequence
+                                              (command
+                                                (simple_command
+                                                  (cmd_name
+                                                    (word
+                                                      (literal)))))))))))))))))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+an argument-position right brace stays a word before a real closer
+==================
+
+{ echo } ; }
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (brace_group
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))
+                                  (cmd_suffix
+                                    (word
+                                      (literal)))))))))
+                      (separator
+                        (separator_op))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+an undelimited right brace stays an ordinary word
+==================
+
+{ :; }x; }
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (compound_command
+                  (brace_group
+                    body: (compound_list
+                      body: (term
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal))))))))
+                        separator: (separator
+                          operator: (separator_op))
+                        and_or: (and_or
+                          pipeline: (pipeline
+                            sequence: (pipe_sequence
+                              command: (command
+                                body: (simple_command
+                                  name: (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      terminator: (separator
+                        operator: (separator_op))))))))))))
+  trailing: (linebreak
+    (newline_list)))
+
+==================
+a glued right brace stays inside the word it follows
+==================
+
+{ x};}
+{ echo $v} ;}
+{ a=b} ;}
+{ ]} ;}
+
+------------------
+
+(program
+  (linebreak
+    (newline_list))
+  (complete_commands
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (brace_group
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      (separator
+                        (separator_op)))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (brace_group
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))
+                                  (cmd_suffix
+                                    (word
+                                      (parameter_expansion
+                                        (variable_name))
+                                      (literal)))))))))
+                      (separator
+                        (separator_op)))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (brace_group
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_prefix
+                                    (assignment_word
+                                      (variable_name)
+                                      (assignment_value
+                                        (literal))))))))))
+                      (separator
+                        (separator_op)))))))))))
+    (newline_list)
+    (complete_command
+      (list
+        (and_or
+          (pipeline
+            (pipe_sequence
+              (command
+                (compound_command
+                  (brace_group
+                    (compound_list
+                      (term
+                        (and_or
+                          (pipeline
+                            (pipe_sequence
+                              (command
+                                (simple_command
+                                  (cmd_name
+                                    (word
+                                      (literal)))))))))
+                      (separator
+                        (separator_op))))))))))))
+  (linebreak
+    (newline_list)))
+
+==================
+a closing brace after a completed group requires recovery
+:error
+==================
+
+{ x; } ; }
+
+------------------
+
+
+
+==================
+malformed stray right parenthesis
+:error
+==================
+before alpha
+)
+after omega
+
+------------------
+
+
+
+==================
+malformed empty subshell
+:error
+==================
+before alpha
+()
+after omega
+
+------------------
+
+
+
+==================
+malformed empty subshell with blank
+:error
+==================
+before alpha
+( )
+after omega
+
+------------------
+
+
+
+==================
+malformed empty subshell with terminator
+:error
+==================
+before alpha
+(;)
+after omega
+
+------------------
+
+
+
+==================
+malformed empty subshell with newline
+:error
+==================
+before alpha
+(
+)
+after omega
+
+------------------
+
+
+
+==================
+malformed right brace command
+:error
+==================
+before alpha
+}
+after omega
+
+------------------
+
+
+
+==================
+missing word comment only brace group
+:error
+==================
+{ # pending
+}
+
+------------------
+
+
+
+==================
+missing word blank line subshell
+:error
+==================
+(
+)
+
+------------------
