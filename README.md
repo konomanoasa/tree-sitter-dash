@@ -4,8 +4,8 @@
 [![crates.io](https://img.shields.io/crates/v/tree-sitter-dash)](https://crates.io/crates/tree-sitter-dash)
 [![npm](https://img.shields.io/npm/v/tree-sitter-dash)](https://www.npmjs.com/package/tree-sitter-dash)
 
-[Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammar for
-dash 0.5.13.5.
+[Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammar for the
+Debian Almquist Shell 0.5.13.5.
 
 ## Installation
 

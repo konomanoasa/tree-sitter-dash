@@ -21,7 +21,7 @@
   "metadata": {
     "version": "0.1.0",
     "license": "MIT",
-    "description": "Tree-sitter grammar for dash.",
+    "description": "Tree-sitter grammar for Dash.",
     "links": {
       "repository": "https://github.com/konomanoasa/tree-sitter-dash"
     }

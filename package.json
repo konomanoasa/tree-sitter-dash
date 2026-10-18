@@ -2,7 +2,7 @@
   "name": "tree-sitter-dash",
   "version": "0.1.0",
   "type": "module",
-  "description": "Tree-sitter grammar for dash.",
+  "description": "Tree-sitter grammar for Dash.",
   "license": "MIT",
   "repository": "git+https://github.com/konomanoasa/tree-sitter-dash.git",
   "files": [
