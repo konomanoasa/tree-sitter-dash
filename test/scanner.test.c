@@ -1160,9 +1160,11 @@ test_embedded_readers_apply_source_views_before_comments_and_closers(void) {
     {"x=$((1 + $((2)))) ) tail", 1, ' '},
     {"x=$((1) 2)) ) tail", 1, ' '},
     {"x=$( (echo one); (echo two)) ) tail", 1, ' '},
-    {"x=${a:})} ) tail", 1, ' '},
-    {"x=${a:\\\n})} ) tail", 1, ' '},
+    {"x=${a:})} ) tail", 1, '}'},
+    {"x=${a:\\\n})} ) tail", 1, '}'},
     {"x=\"${a:}\"}\"}\" ) tail", 1, ' '},
+    {"x=${a:-\\})} ) tail", 1, ' '},
+    {"x=${a:-\"}\"} ) tail", 1, ' '},
     {"printf '\\\n)'; : ) tail", 1, ' '},
     {": `printf '%s' x` ) tail", 1, ' '},
     {"case x in x) : `case y in esac`;; z) :;; esac)tail", 1, 't'},
@@ -3060,15 +3062,21 @@ static void test_byte_delimiter_matching(void) {
   ));
 
   const uint8_t invalid_ff[] = {0xff};
-  const int32_t bell[] = {0x07, '\n'};
-  assert(!line_matches_document(
-    invalid_ff,
-    sizeof(invalid_ff),
-    true,
-    false,
-    bell,
-    ARRAY_LENGTH(bell)
-  ));
+  const int32_t mismatched_lines[][2] = {
+    {0x07, '\n'},
+    {0xff, '\n'},
+    {0xfffd, '\n'},
+  };
+  for (size_t index = 0; index < ARRAY_LENGTH(mismatched_lines); index += 1) {
+    assert(!line_matches_document(
+      invalid_ff,
+      sizeof(invalid_ff),
+      true,
+      false,
+      mismatched_lines[index],
+      ARRAY_LENGTH(mismatched_lines[index])
+    ));
+  }
 
   const uint8_t truncated[] = {0xc3};
   assert(!line_matches_document(
@@ -3449,129 +3457,62 @@ static void test_dollar_single_quote_escape_units(void) {
   }
 }
 
-static void test_dollar_single_quote_delimiter_bytes(void) {
+static void
+test_dollar_single_quote_delimiter_bytes_survive_state_restore(void) {
   struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
   assert(scanner != NULL);
 
-  const int32_t control_input[] = {
-    '$',
-    '\'',
-    '\\',
-    'c',
-    '?',
-    '\'',
-    '\n',
+  const struct {
+    const char *source;
+    uint8_t delimiter[4];
+    size_t delimiter_length;
+  } fixtures[] = {
+    {"$'\\c?'\n", {0x7f}, 1},
+    {"$'\\xC3\\xBF'\n", {0xc3, 0xbf}, 2},
+    {"$'\\303\\277'\n", {0xc3, 0xbf}, 2},
+    {"$'\\xC3'$'\\277'\n", {0xc3, 0xbf}, 2},
+    {"$'\\xFF'\n", {0xff}, 1},
+    {"$'\\377'\n", {0xff}, 1},
+    {"$'\\xC3'\n", {0xc3}, 1},
+    {"$'\\277'\n", {0xbf}, 1},
+    {"a$'\\xC3'b\n", {'a', 0xc3, 'b'}, 3},
+    {"$'\\xC0\\xAF'\n", {0xc0, 0xaf}, 2},
+    {"$'\\xED\\xA0\\x80'\n", {0xed, 0xa0, 0x80}, 3},
+    {"$'\\xF4\\x90\\x80\\x80'\n", {0xf4, 0x90, 0x80, 0x80}, 4},
+    {"$'\\ud800'\n", {0xed, 0xa0, 0x80}, 3},
+    {"$'E\\U00110000F'\n", {'E', 'F'}, 2},
   };
-  assert(
-    scan_delimiter_fixture(scanner, control_input, ARRAY_LENGTH(control_input))
-  );
-  const uint8_t del[] = {0x7f};
-  assert_document_bytes(&scanner->pending_documents[0], del, sizeof(del), true);
-  clear_scanner(scanner);
+  for (size_t index = 0; index < ARRAY_LENGTH(fixtures); index += 1) {
+    size_t length = strlen(fixtures[index].source);
+    int32_t *input = malloc(length * sizeof(*input));
+    assert(input != NULL);
+    for (size_t offset = 0; offset < length; offset += 1) {
+      input[offset] = (unsigned char)fixtures[index].source[offset];
+    }
+    assert(scan_delimiter_fixture(scanner, input, length));
+    free(input);
+    assert(scanner->pending_count == 1);
+    assert_document_bytes(
+      &scanner->pending_documents[0],
+      fixtures[index].delimiter,
+      fixtures[index].delimiter_length,
+      true
+    );
 
-  const int32_t utf8_input[] = {
-    '$',
-    '\'',
-    '\\',
-    'x',
-    'C',
-    '3',
-    '\\',
-    'x',
-    'B',
-    'F',
-    '\'',
-    '\n',
-  };
-  assert(scan_delimiter_fixture(scanner, utf8_input, ARRAY_LENGTH(utf8_input)));
-  const uint8_t utf8_ff[] = {0xc3, 0xbf};
-  assert_document_bytes(
-    &scanner->pending_documents[0],
-    utf8_ff,
-    sizeof(utf8_ff),
-    true
-  );
-  clear_scanner(scanner);
-
-  const int32_t invalid_input[] = {
-    '$',
-    '\'',
-    '\\',
-    'x',
-    'F',
-    'F',
-    '\'',
-    '\n',
-  };
-  assert(
-    scan_delimiter_fixture(scanner, invalid_input, ARRAY_LENGTH(invalid_input))
-  );
-  const uint8_t invalid_ff[] = {0xff};
-  assert_document_bytes(
-    &scanner->pending_documents[0],
-    invalid_ff,
-    sizeof(invalid_ff),
-    true
-  );
-  clear_scanner(scanner);
-
-  const int32_t surrogate_input[] = {
-    '$',
-    '\'',
-    '\\',
-    'u',
-    'd',
-    '8',
-    '0',
-    '0',
-    '\'',
-    '\n',
-  };
-  assert(scan_delimiter_fixture(
-    scanner,
-    surrogate_input,
-    ARRAY_LENGTH(surrogate_input)
-  ));
-  const uint8_t surrogate_bytes[] = {0xed, 0xa0, 0x80};
-  assert_document_bytes(
-    &scanner->pending_documents[0],
-    surrogate_bytes,
-    sizeof(surrogate_bytes),
-    true
-  );
-  clear_scanner(scanner);
-
-  const int32_t out_of_range_input[] = {
-    '$',
-    '\'',
-    'E',
-    '\\',
-    'U',
-    '0',
-    '0',
-    '1',
-    '1',
-    '0',
-    '0',
-    '0',
-    '0',
-    'F',
-    '\'',
-    '\n',
-  };
-  assert(scan_delimiter_fixture(
-    scanner,
-    out_of_range_input,
-    ARRAY_LENGTH(out_of_range_input)
-  ));
-  const uint8_t out_of_range_bytes[] = {'E', 'F'};
-  assert_document_bytes(
-    &scanner->pending_documents[0],
-    out_of_range_bytes,
-    sizeof(out_of_range_bytes),
-    true
-  );
-  clear_scanner(scanner);
+    char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+    unsigned state_length = snapshot_scanner(scanner, state);
+    clear_scanner(scanner);
+    tree_sitter_dash_external_scanner_deserialize(scanner, state, state_length);
+    assert(scanner->pending_count == 1);
+    assert_document_bytes(
+      &scanner->pending_documents[0],
+      fixtures[index].delimiter,
+      fixtures[index].delimiter_length,
+      true
+    );
+    assert_scanner_matches_snapshot(scanner, state, state_length);
+    clear_scanner(scanner);
+  }
 
   const int32_t control_operand_input[] = {
     '$',
@@ -5145,7 +5086,7 @@ int main(void) {
   test_arithmetic_delimiters_preserve_nested_quote_context();
   test_substitution_hash_delimiter_words();
   test_dollar_single_quote_escape_units();
-  test_dollar_single_quote_delimiter_bytes();
+  test_dollar_single_quote_delimiter_bytes_survive_state_restore();
   test_delimiter_scan_resource_rollback();
   test_logical_lexical_emission_keeps_individual_physical_pairs();
   test_word_entry_classifies_and_owns_source_in_normal_and_recovery_scans();

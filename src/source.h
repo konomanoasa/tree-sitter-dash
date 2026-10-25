@@ -25,7 +25,7 @@ enum SourceStageKind {
 };
 
 struct SourceOrigin {
-  /* Resumed units may have advance ordinals before this callback. */
+  /* Advance ordinals can be negative after resuming. */
   int64_t start;
   int64_t end;
   int64_t character;
@@ -297,7 +297,6 @@ static inline bool source_feed_stage(
     return source_append_logical(cursor, character);
   }
   if (character.boundary_stage != SIZE_MAX) {
-    /* Pending backslashes cannot pair across this source boundary. */
     return source_flush_pending(cursor, index) &&
       source_append_logical(cursor, character);
   }

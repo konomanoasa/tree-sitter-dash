@@ -10335,6 +10335,122 @@
         }
       ]
     },
+    "_separator_here_document_sequence": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_here_document_sequence_header"
+        },
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "FIELD",
+            "name": "document",
+            "content": {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_separator_here_document"
+              },
+              "named": true,
+              "value": "here_document"
+            }
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_here_document_sequence_end"
+        }
+      ]
+    },
+    "_separator_here_document_prefix": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_here_document_body_start"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "body",
+              "content": {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_separator_here_document_body"
+                },
+                "named": true,
+                "value": "here_document_body"
+              }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "_separator_here_document": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_separator_here_document_prefix"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "end",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "here_document_end"
+                  }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_here_document_eof"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_quoted_here_document_prefix"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "end",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "here_document_end"
+                  }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_here_document_eof"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
     "here_document_end": {
       "type": "SEQ",
       "members": [
@@ -10521,6 +10637,52 @@
             },
             "named": true,
             "value": "quoted_here_document_text"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_newline"
+          }
+        ]
+      }
+    },
+    "_separator_here_document_body": {
+      "type": "REPEAT1",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "here_document_text"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "here_document_escape"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_double_quoted_parameter_expansion"
+            },
+            "named": true,
+            "value": "parameter_expansion"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "command_substitution"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "arithmetic_expansion"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_double_quoted_backquote_substitution"
+            },
+            "named": true,
+            "value": "backquote_substitution"
           },
           {
             "type": "SYMBOL",
@@ -18152,8 +18314,13 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "SYMBOL",
-            "name": "here_document_sequence"
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_separator_here_document_sequence"
+            },
+            "named": true,
+            "value": "here_document_sequence"
           },
           {
             "type": "REPEAT",

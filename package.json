@@ -22,21 +22,21 @@
   },
   "scripts": {
     "build": "npm run tree-sitter -- build-all",
-    "check": "biome check . && tsc --noEmit",
+    "check": "biome check . && tsc",
     "check:queries": "npm run tree-sitter -- check-queries",
     "format": "biome format --write .",
     "generate": "npm run tree-sitter -- generate-all",
-    "test": "npm run tree-sitter -- test-corpus --rebuild && node --test --test-concurrency=1 \"test/*.test.js\"",
+    "test": "npm run tree-sitter -- test-corpus --rebuild && node --test --test-concurrency=1 test/build.test.js test/cst.test.js test/highlight.test.js test/incremental.test.js test/parser.test.js test/recovery.test.js",
     "test:fuzz:corpus": "npm run tree-sitter -- fuzz-all --iterations 100 --edits 5",
     "test:highlights": "node --test test/highlight.test.js",
-    "test:incremental": "node --test --test-concurrency=1 test/cst.test.js test/parser.test.js test/incremental.test.js",
+    "test:incremental": "node --test --test-concurrency=1 test/cst.test.js test/incremental.test.js test/parser.test.js test/recovery.test.js",
     "test:performance": "node --test test/performance.test.js",
     "test:sanitize": "node scripts/check-c.js --sanitize",
     "test:scanner": "node scripts/check-c.js",
     "tree-sitter": "node scripts/tree-sitter.js"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.15",
+    "@biomejs/biome": "2.6.2",
     "@types/node": "26.6.5",
     "tree-sitter-cli": "0.27.1",
     "typescript": "7.0.2"

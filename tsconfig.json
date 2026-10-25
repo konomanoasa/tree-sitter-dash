@@ -3,6 +3,7 @@
     "allowJs": true,
     "checkJs": true,
     "module": "nodenext",
+    "noEmit": true,
     "noImplicitAny": false,
     "types": ["node", "tree-sitter-cli/dsl"]
   }

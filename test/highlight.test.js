@@ -192,8 +192,8 @@ function assertCommand(arguments_) {
 
 const finalCaptureCases = [
   {
-    name: "a colon-brace parameter operator keeps its brace out of punctuation captures",
-    source: `echo \${a:}word}\n`,
+    name: "a default-value operator stays distinct from its operand and closing brace",
+    source: `echo \${a:-word}\n`,
     captures: [
       [0, 4, "function.call"],
       [5, 6, "variable"],

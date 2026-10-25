@@ -7,7 +7,9 @@ import {
   sourceNodes,
 } from "./support/cst.js";
 import {
+  applyEdits,
   assertIncrementalEqualsFresh,
+  assertRepeatedColdParse,
   parseValidCst,
   runParse,
   writeSource,
@@ -165,6 +167,7 @@ test("static command words obey function name rules across layout and enclosing 
 });
 
 test("edits across a static command and function boundary agree with fresh parsing", () => {
+  const functionNameGapBytes = 4096;
   for (const [source, removed, inserted, mode] of [
     ["command () :\n", "command", "export", "recovery"],
     [": $(command () :)\n", "command", "'command'", "recovery"],
@@ -179,7 +182,12 @@ test("edits across a static command and function boundary agree with fresh parsi
     [": $(command () :)\n", " ()", " \\\n ()", "valid"],
     [": $(command () :)\n", "()", "(x)", "recovery"],
     [": `command () :`\n", "()", "(", "recovery"],
-    [`command${" ".repeat(4096)}() :\n`, "()", "x()", "recovery"],
+    [
+      `command${" ".repeat(functionNameGapBytes)}() :\n`,
+      "()",
+      "x()",
+      "recovery",
+    ],
   ]) {
     const byte = source.indexOf(removed);
     assert.notEqual(byte, -1);
@@ -207,93 +215,44 @@ test("edits across a static command and function boundary agree with fresh parsi
   }
 });
 
-test("colon-brace parameter operators retain their boundary across enclosing contexts", () => {
+test("colon-brace parameter forms require recovery across enclosing contexts and source views", () => {
   for (const expansion of [
+    `\${a:}`,
     `\${a:}}`,
     `\${a:}word}`,
     `\${1:}}`,
     `\${?:}}`,
+    `\${#:}}`,
+    `\${#:}word}`,
     `\${a:}\${b:-x}}`,
     `\${a:}$(printf x)}`,
     `\${a:})}`,
     `\${a:}"}"}`,
     `\${a:}\\}}`,
+    `\${a:}}tail`,
+    `\${a:}}$(printf tail)`,
     `\${a:\\\n}}`,
-  ]) {
-    for (const source of [
-      `: ${expansion}\n`,
-      `: "${expansion}"\n`,
-      `v=${expansion}\n`,
-      `cat <<E\n${expansion}\nE\n`,
-      `: $(printf '%s' ${expansion})\n`,
-      `: $((${expansion}))\n`,
-    ]) {
-      const nodes = sourceNodes(
-        parseValidCst(writeSource("colon-brace-parameter", source)),
-        source,
-      );
-      const operator = nodes.find(
-        ({ type, text }) =>
-          type === "parameter_value_operator" &&
-          text.replaceAll("\\\n", "") === ":}",
-      );
-      assert.ok(operator, source);
-      const parameter = nodes.find(
-        ({ type, text }) =>
-          type === "parameter_expansion" && text === expansion,
-      );
-      assert.ok(parameter, source);
-      assert.equal(
-        operator.start,
-        parameter.start + expansion.indexOf(":"),
-        source,
-      );
-      assert.ok(operator.end < parameter.end, source);
-    }
-  }
-  for (const suffix of ["tail", "$(printf tail)"]) {
-    const source = `: \${a:}}${suffix}\n`;
-    const nodes = sourceNodes(
-      parseValidCst(writeSource("colon-brace-suffix", source)),
-      source,
-    );
-    assert.ok(
-      nodes.some(
-        ({ type, text }) =>
-          type === "parameter_expansion" && text === `\${a:}}`,
-      ),
-      source,
-    );
-    assert.ok(
-      nodes.some(
-        ({ text, start }) =>
-          text === suffix && start === Buffer.byteLength(`: \${a:}}`),
-      ),
-      source,
-    );
-  }
-});
-
-test("colon-brace operators retain invalid headers and incomplete operands as errors", () => {
-  for (const expansion of [
-    `\${a:}`,
-    `\${#:}}`,
-    `\${#:}word}`,
+    `\${a:\0}}`,
+    `\${a:\\\0\n}}`,
     `\${#:\\\n}}`,
     `\${a:!}`,
   ]) {
     for (const source of [
       `: ${expansion}\n`,
       `: "${expansion}"\n`,
+      `v=${expansion}\n`,
+      `: \${outer:-${expansion}}\n`,
       `cat <<E\n${expansion}\nE\n`,
+      `: $(printf '%s' ${expansion})\n`,
+      `: \`printf '%s' ${expansion}\`\n`,
+      `: $((${expansion}))\n`,
+      `: $((@ ${expansion}))\n`,
     ]) {
       assert.equal(
-        hasRecovery(
-          runParse({
-            source: writeSource("colon-brace-invalid", source),
-            mode: "recovery",
-          }).output,
-        ),
+        runParse({
+          source: writeSource("colon-brace-parameter", source),
+          mode: "recovery",
+        }).recovery,
         true,
         source,
       );
@@ -675,6 +634,76 @@ test("delimiter source uses quote removal without command or parameter validatio
         /command_substitution|arithmetic_expansion|parameter_expansion/,
       );
     }
+  }
+});
+
+test("editing escaped delimiter bytes switches between EOF body and a matching terminator", () => {
+  for (const [name, unmatchedWord, matchedWord] of [
+    ["hex-byte", "$'\\xFF'", "$'\\xC3\\xBF'"],
+    ["octal-byte", "$'\\377'", "$'\\303\\277'"],
+    ["joined-quotes", "$'\\xC3'", "$'\\xC3'$'\\277'"],
+  ]) {
+    const sources = [
+      {
+        word: unmatchedWord,
+        ends: [],
+        body: "body\nÿ\necho AFTER\n",
+        commands: ["cat"],
+      },
+      {
+        word: matchedWord,
+        ends: ["ÿ"],
+        body: "body\n",
+        commands: ["cat", "echo"],
+      },
+    ].map(({ word, ends, body, commands }) => {
+      const source = `cat <<${word}\nbody\nÿ\necho AFTER\n`;
+      const file = writeSource(name, source);
+      const nodes = sourceNodes(parseValidCst(file), source);
+      for (const [type, expected] of [
+        ["here_end_text", [word]],
+        ["quoted_here_document_body", [body]],
+        ["here_document_end_text", ends],
+        ["cmd_name", commands],
+      ]) {
+        assert.deepEqual(
+          nodes.filter((node) => node.type === type).map(({ text }) => text),
+          expected,
+          `${name}: ${type}`,
+        );
+      }
+      return file;
+    });
+    const [unmatched, matched] = sources;
+    const remove = {
+      byte: 6,
+      deleteBytes: matchedWord.length,
+      insert: unmatchedWord,
+    };
+    const repair = {
+      byte: 6,
+      deleteBytes: unmatchedWord.length,
+      insert: matchedWord,
+    };
+    assertIncrementalEqualsFresh(
+      matched,
+      unmatched,
+      `${name}-remove-matching-bytes`,
+      remove,
+    );
+    assertIncrementalEqualsFresh(
+      unmatched,
+      matched,
+      `${name}-restore-matching-bytes`,
+      repair,
+    );
+    assertIncrementalEqualsFresh(
+      matched,
+      matched,
+      `${name}-roundtrip`,
+      remove,
+      repair,
+    );
   }
 });
 
@@ -1264,4 +1293,33 @@ test("retained command classes give intervening and trailing newlines their ordi
       }
     }
   }
+});
+
+test("here-document body size is independent of serialized delimiter capacity", () => {
+  const bodyLineCount = 4096;
+  const scannerStateCapacityBytes = 1024;
+  for (const quoted of [false, true]) {
+    const body = "ordinary body text\n".repeat(bodyLineCount);
+    const output = parseValidCst(
+      writeSource(
+        "long-body",
+        `cat <<${quoted ? "'END'" : "END"}\n${body}END\n`,
+      ),
+    );
+    assert.match(output, /end: here_document_end/);
+    const retained = `: \`cat <<${quoted ? "'A'" : "A"} <<B)v=${body}A\n$(printf X)\nB\n\`\n`;
+    const initial = writeSource("long-retained-body", retained);
+    const byte = retained.indexOf("v=");
+    const edit = { byte, deleteBytes: 1, insert: "1" };
+    const final = writeSource(
+      "long-retained-body-edited",
+      applyEdits(retained, [edit]),
+    );
+    assertIncrementalEqualsFresh(initial, final, "long retained body", edit);
+  }
+  const source = writeSource(
+    "delimiter-capacity",
+    `cat <<'${"D".repeat(scannerStateCapacityBytes)}'\nbody\n`,
+  );
+  assertRepeatedColdParse("resource", source, "oversized delimiter");
 });

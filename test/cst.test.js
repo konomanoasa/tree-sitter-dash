@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { test } from "node:test";
-import { corpusCases } from "./support/corpus.js";
 import { nodeIdentity, parseCst, sourceNodes } from "./support/cst.js";
 import {
   assertRepeatedColdParse,
   parseValidCst,
   writeSource,
 } from "./support/parser.js";
+import { scaleFactors, scalingWorkloads } from "./support/workloads.js";
 
 test("NUL insertion preserves syntax across lexical and here-document boundaries", () => {
   for (const source of [
@@ -69,15 +71,77 @@ test("one leading BOM is excluded and later U+FEFF remains word source", () => {
   );
 });
 
-test("valid corpus trees preserve source ranges and lexical boundaries", () => {
-  for (const { name, source, mode } of corpusCases()) {
-    if (mode === "valid") parseValidCst(writeSource(name, source), name);
-  }
-});
+const corpusDirectory = join(import.meta.dirname, "corpus");
+const corpusHeader = "==================\n";
+const corpusSeparator = "\n------------------\n";
 
-test("fresh recovery is deterministic across malformed corpus inputs", () => {
-  for (const { name, source, mode } of corpusCases()) {
-    if (mode === "recovery")
+function corpusCases() {
+  return readdirSync(corpusDirectory)
+    .sort()
+    .flatMap((file) => {
+      const parts = readFileSync(join(corpusDirectory, file), "utf8").split(
+        corpusHeader,
+      );
+      assert.equal(parts.shift(), "", file);
+      assert.equal(parts.length % 2, 0, file);
+      const cases = [];
+      for (let index = 0; index < parts.length; index += 2) {
+        const [name, ...attributes] = parts[index].trimEnd().split("\n");
+        assert.ok(
+          attributes.every(
+            (attribute) => attribute === ":cst" || attribute === ":error",
+          ),
+          name,
+        );
+        const end = parts[index + 1].indexOf(corpusSeparator);
+        assert.notEqual(end, -1, name);
+        cases.push({
+          name: `${file}: ${name}`,
+          source: parts[index + 1].slice(0, end),
+          mode: attributes.includes(":error") ? "recovery" : "valid",
+        });
+      }
+      return cases;
+    });
+}
+
+for (const { name, source, mode } of corpusCases()) {
+  if (mode === "valid") {
+    test(`corpus source ranges and lexical boundaries: ${name}`, () => {
+      parseValidCst(writeSource(name, source), name);
+    });
+  } else {
+    test(`fresh recovery is deterministic: ${name}`, () => {
       assertRepeatedColdParse(mode, writeSource(name, source), name);
+    });
   }
-});
+}
+
+const substitutionDepth = 128;
+const wordBytes = 262_144;
+const unfinishedLoopCount = 500;
+const pendingDocumentCount = 256;
+for (const [name, contents] of [
+  [
+    "nested substitutions",
+    `: ${"$(".repeat(substitutionDepth)}printf value${")".repeat(substitutionDepth)}\n`,
+  ],
+  ["long word", `: ${"x".repeat(wordBytes)}\n`],
+  ["unfinished loops", "for x; do :\n".repeat(unfinishedLoopCount)],
+  [
+    "pending documents",
+    `cat${" <<E".repeat(pendingDocumentCount)}\n${"body\nE\n".repeat(pendingDocumentCount)}`,
+  ],
+]) {
+  test(`limit input completes with deterministic recovery: ${name}`, () => {
+    assertRepeatedColdParse("resource", writeSource(name, contents), name);
+  });
+}
+
+for (const { name, units, source } of scalingWorkloads) {
+  for (const factor of scaleFactors) {
+    test(`${name} preserves source through EOF at scale ${factor}`, () => {
+      parseValidCst(writeSource(`${name}-${factor}`, source(units * factor)));
+    });
+  }
+}

@@ -1795,38 +1795,23 @@ EOF
 ------------------
 
 ==================
-colon-brace operators own their brace and preserve operand and following source
+colon before a closing brace is not a value operator
+:error
 ==================
-: ${a:}}tail "${a:}word}"
+: ${a:}}
 
 ------------------
 
-(program
-  commands: (complete_commands
-    command: (complete_command
-      body: (list
-        and_or: (and_or
-          pipeline: (pipeline
-            sequence: (pipe_sequence
-              command: (command
-                body: (simple_command
-                  name: (cmd_name (word (literal)))
-                  suffix: (cmd_suffix
-                    word: (word
-                      (parameter_expansion
-                        parameter: (variable_name)
-                        operator: (parameter_value_operator))
-                      (literal))
-                    word: (word
-                      (double_quoted
-                        (parameter_expansion
-                          parameter: (variable_name)
-                          operator: (parameter_value_operator)
-                          word: (parameter_word (double_quote_text))))))))))))))
-  trailing: (linebreak (newline_list)))
+==================
+colon-brace with an operand is not a parameter expansion
+:error
+==================
+: ${a:}word}
+
+------------------
 
 ==================
-a colon-brace operator does not supply the closing parameter brace
+a colon before the closing parameter brace is incomplete
 :error
 ==================
 : ${a:}
@@ -1834,7 +1819,7 @@ a colon-brace operator does not supply the closing parameter brace
 ------------------
 
 ==================
-a colon-brace after hash is not a value operator on the special parameter
+colon-brace after hash is not a value operator on the special parameter
 :error
 ==================
 : ${#:}}

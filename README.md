@@ -15,8 +15,6 @@ npm install tree-sitter-dash
 
 ## Development
 
-Development uses Node.js 24.21.0 or later.
-
 ```sh
 npm install
 npm run build
@@ -29,7 +27,7 @@ npm test
 
 ## Used By
 
-[dash-ts-mode](https://github.com/konomanoasa/dash-ts-mode): Emacs major mode.
+[dash-ts-mode](https://github.com/konomanoasa/dash-ts-mode)
 
 ## License
 

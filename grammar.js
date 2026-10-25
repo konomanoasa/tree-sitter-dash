@@ -72,7 +72,7 @@ const PATTERN_PRECEDENCE = {
 const lexical = ($, begin) =>
   seq(begin, repeat1(sourceToken($, begin, "lexical", "piece")));
 
-// Alias the token directly so inserted MISSING tokens stay visible.
+// Direct aliases keep inserted MISSING tokens visible.
 const wholeSource = ($, begin, lexeme, visible) =>
   choice(
     seq(
@@ -118,7 +118,7 @@ const keywordRules = () =>
     ]),
   );
 
-// Reduce each delimiter to one stack entry so recovery can reach the command.
+// One stack entry per delimiter keeps commands within recovery reach.
 const PHYSICAL_RULES = {
   _punct_right_bracket: "]",
   _word_pattern_bracket_open: "[",
@@ -586,7 +586,7 @@ const conditionalThenBranch = ($, header, tail) =>
     tail,
   );
 
-// Layout before fi lets elif reduce its empty alternative before else.
+// Layout before fi lets empty elif alternatives reduce before else.
 const ifClause = ($) =>
   conditionalThenBranch(
     $,
@@ -824,6 +824,35 @@ const redirectBody = ($) => field("body", choice($.io_file, $.io_here));
 
 const hereDocumentVariant = ($, prefix) =>
   seq(prefix, choice(field("end", $.here_document_end), $._here_document_eof));
+
+const hereDocumentSequence = ($, document) =>
+  seq(
+    $._here_document_sequence_header,
+    repeat1(field("document", document)),
+    $._here_document_sequence_end,
+  );
+
+const hereDocumentPrefix = (start, body) =>
+  seq(start, optional(field("body", body)));
+
+const hereDocumentBody = ($, quoted) =>
+  repeat1(
+    choice(
+      ...(quoted
+        ? [
+            alias(
+              $._quoted_here_document_text_lexeme,
+              $.quoted_here_document_text,
+            ),
+          ]
+        : [
+            $.here_document_text,
+            $.here_document_escape,
+            ...quotedExpansionParts($),
+          ]),
+      $._newline,
+    ),
+  );
 
 const redirectList = ($) =>
   seq(
@@ -1730,27 +1759,38 @@ export default grammar({
         ),
       ),
 
-    here_document_sequence: ($) =>
-      seq(
-        $._here_document_sequence_header,
-        repeat1(field("document", $.here_document)),
-        $._here_document_sequence_end,
-      ),
+    here_document_sequence: ($) => hereDocumentSequence($, $.here_document),
+
     _here_document_prefix: ($) =>
-      seq(
-        $._here_document_body_start,
-        optional(field("body", $.here_document_body)),
-      ),
+      hereDocumentPrefix($._here_document_body_start, $.here_document_body),
 
     _quoted_here_document_prefix: ($) =>
-      seq(
+      hereDocumentPrefix(
         $._quoted_here_document_body_start,
-        optional(field("body", $.quoted_here_document_body)),
+        $.quoted_here_document_body,
       ),
 
     here_document: ($) =>
       choice(
         hereDocumentVariant($, $._here_document_prefix),
+        hereDocumentVariant($, $._quoted_here_document_prefix),
+      ),
+
+    _separator_here_document_sequence: ($) =>
+      hereDocumentSequence(
+        $,
+        alias($._separator_here_document, $.here_document),
+      ),
+
+    _separator_here_document_prefix: ($) =>
+      hereDocumentPrefix(
+        $._here_document_body_start,
+        alias($._separator_here_document_body, $.here_document_body),
+      ),
+
+    _separator_here_document: ($) =>
+      choice(
+        hereDocumentVariant($, $._separator_here_document_prefix),
         hereDocumentVariant($, $._quoted_here_document_prefix),
       ),
 
@@ -1778,28 +1818,12 @@ export default grammar({
 
     here_document_end_text: ($) => lexical($, $._here_document_end_text_begin),
 
-    here_document_body: ($) =>
-      repeat1(
-        choice(
-          $.here_document_text,
-          $.here_document_escape,
-          ...quotedExpansionParts($),
-          $._newline,
-        ),
-      ),
+    here_document_body: ($) => hereDocumentBody($, false),
     here_document_text: ($) => lexical($, $._here_document_text_begin),
-
     here_document_escape: ($) => lexical($, $._here_document_escape_begin),
-    quoted_here_document_body: ($) =>
-      repeat1(
-        choice(
-          alias(
-            $._quoted_here_document_text_lexeme,
-            $.quoted_here_document_text,
-          ),
-          $._newline,
-        ),
-      ),
+    quoted_here_document_body: ($) => hereDocumentBody($, true),
+    _separator_here_document_body: ($) => hereDocumentBody($, false),
+
     _assignment_word_header: ($) =>
       seq(
         field("name", alias($._assignment_name_lexeme, $.variable_name)),
@@ -2505,7 +2529,10 @@ export default grammar({
       ledNewlineList($, seq($._separator_newline, $._layout_newline)),
 
     _here_document_led_newline_list: ($) =>
-      ledNewlineList($, $.here_document_sequence),
+      ledNewlineList(
+        $,
+        alias($._separator_here_document_sequence, $.here_document_sequence),
+      ),
 
     linebreak: ($) => $.newline_list,
 
