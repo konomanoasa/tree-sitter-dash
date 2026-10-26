@@ -72,7 +72,7 @@ const PATTERN_PRECEDENCE = {
 const lexical = ($, begin) =>
   seq(begin, repeat1(sourceToken($, begin, "lexical", "piece")));
 
-// Direct aliases keep inserted MISSING tokens visible.
+// Direct aliases preserve MISSING tokens.
 const wholeSource = ($, begin, lexeme, visible) =>
   choice(
     seq(
@@ -118,7 +118,7 @@ const keywordRules = () =>
     ]),
   );
 
-// One stack entry per delimiter keeps commands within recovery reach.
+// One stack entry per delimiter lets recovery reach the command.
 const PHYSICAL_RULES = {
   _punct_right_bracket: "]",
   _word_pattern_bracket_open: "[",

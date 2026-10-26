@@ -954,7 +954,7 @@ encode_utf8_scalar(int32_t character, uint8_t bytes[4], size_t *length) {
     return true;
   }
 
-  // dash encodes surrogate escapes with the generic three-byte form.
+  // dash encodes surrogate escapes as three bytes.
   if (character <= 0xffff) {
     bytes[0] = (uint8_t)(0xe0 | (character >> 12));
     bytes[1] = (uint8_t)(0x80 | ((character >> 6) & 0x3f));
@@ -7142,7 +7142,6 @@ static bool scan_backquote_remainder(
     int32_t first = lexer->lookahead;
     enum TokenType begin = first == '(' ? BACKQUOTE_REMAINDER_PARENTHESIS_BEGIN
                                         : BACKQUOTE_REMAINDER_BEGIN;
-    // A lone word before ( starts a function definition.
     bool terminator = advance_backquote_terminator(
       lexer,
       first,

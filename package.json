@@ -7,6 +7,7 @@
   "repository": "git+https://github.com/konomanoasa/tree-sitter-dash.git",
   "files": [
     "Cargo.toml",
+    "PARSING_POLICY.md",
     "bindings/rust/*.rs",
     "grammar.js",
     "queries/*.scm",

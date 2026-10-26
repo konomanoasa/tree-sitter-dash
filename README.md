@@ -21,6 +21,10 @@ npm run build
 npm test
 ```
 
+## Parsing Policy
+
+[Parsing Policy](PARSING_POLICY.md)
+
 ## Specification
 
 [dash(1) Manual, Version 0.5.13.5](https://manpages.debian.org/experimental/dash/dash.1.en.html)
