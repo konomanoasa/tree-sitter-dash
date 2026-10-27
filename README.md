@@ -13,6 +13,10 @@ Debian Almquist Shell 0.5.13.5.
 npm install tree-sitter-dash
 ```
 
+## Parsing Policy
+
+[Parsing Policy](PARSING_POLICY.md)
+
 ## Development
 
 ```sh
@@ -21,18 +25,14 @@ npm run build
 npm test
 ```
 
-## Parsing Policy
-
-[Parsing Policy](PARSING_POLICY.md)
-
 ## Specification
 
 [dash(1) Manual, Version 0.5.13.5](https://manpages.debian.org/experimental/dash/dash.1.en.html)
 
-## Used By
-
-[dash-ts-mode](https://github.com/konomanoasa/dash-ts-mode)
-
 ## License
 
 [MIT](LICENSE)
+
+## Used By
+
+[dash-ts-mode](https://github.com/konomanoasa/dash-ts-mode)

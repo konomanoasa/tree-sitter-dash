@@ -1,11 +1,11 @@
 # Parsing Policy
 
-The parser analyzes source as written. It parses the following commands but
-does not apply their effects to parsing.
+`dash` parses source using [dash 0.5.13.5](https://manpages.debian.org/experimental/dash/dash.1.en.html) default settings.
 
-| Command            | Effects not applied                                               |
-| ------------------ | ----------------------------------------------------------------- |
-| `.`                | Loading another file or applying changes made by its execution.   |
-| `alias`, `unalias` | Alias substitution or changes to alias definitions.               |
-| `eval`             | Reparsing code constructed from its arguments.                    |
-| `set`              | Changing parsing conditions in response to shell option settings. |
+The following commands can affect how subsequent source is parsed. The parser
+recognizes these commands but does not apply their effects.
+
+| Command            | Effects not applied                                 |
+| ------------------ | --------------------------------------------------- |
+| `alias`, `unalias` | Alias substitution or changes to alias definitions. |
+| `set`              | Changes to shell option settings.                   |
