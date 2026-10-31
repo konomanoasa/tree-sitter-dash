@@ -1,10 +1,12 @@
 .DS_Store
 
+build/
 *.dylib
 *.o
 
-build/
-
 node_modules/
+
+.venv/
+dist/
 
 target/

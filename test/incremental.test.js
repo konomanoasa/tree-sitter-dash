@@ -8,6 +8,25 @@ import {
 } from "./support/parser.js";
 import { editingWorkloads } from "./support/workloads.js";
 
+test("NUL removal preserves incremental CSTs across source contexts", () => {
+  for (const contents of [
+    "if :; then :; fi\n",
+    "cat <<'E'\nbody\nE\n",
+    "cat <<E\nbody\n",
+    ": a\\\nb\n",
+  ]) {
+    const decorated = `\0${Array.from(contents).join("\0")}\0`;
+    const initial = writeSource("nul-edit-initial", decorated);
+    const final = writeSource("nul-edit-final", contents);
+    const remove = {
+      byte: 0,
+      deleteBytes: Buffer.byteLength(decorated),
+      insert: contents,
+    };
+    assertIncrementalEqualsFresh(initial, final, contents, remove);
+  }
+});
+
 for (const [name, source, removed, inserted] of [
   ["here delimiter", "cat <<E\nbody\nE\n", "E", "END"],
   ["here quote", "cat <<E\n$v\nE\n", "<<E", "<<'E'"],
@@ -95,7 +114,12 @@ for (const [name, source, removed, inserted] of [
   ["word", "printf alpha\n", "alpha", "beta"],
   ["descriptor", ": 9>out\n", "9", "10"],
   ["function body", "f() printf x\n", "printf", "echo"],
-  ["function close", "f() { :; }\n: after\n", "}", ""],
+  [
+    "function close after Unicode content",
+    "f() { printf '終😀'; }\n: after\n",
+    "}",
+    "",
+  ],
   ["if keyword", "if :; then :; fi\n: after\n", "then", ""],
   ["for header newline", "for x; do :; done\n", ";", "\n;"],
   [

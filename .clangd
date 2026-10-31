@@ -28,3 +28,10 @@ If:
 CompileFlags:
   Add:
     - -Wno-unused-function
+
+---
+If:
+  PathMatch: bindings/python/.*\.c
+CompileFlags:
+  Add:
+    - -I../../src

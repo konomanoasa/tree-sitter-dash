@@ -11,9 +11,9 @@ import { generateParsers, grammars, packageName, root } from "./tree-sitter.js";
 
 const generatedPaths = [
   "grammar.json",
-  "lexical-tokens.h",
   "node-types.json",
   "parser.c",
+  "tokens.h",
   join("tree_sitter", "alloc.h"),
   join("tree_sitter", "array.h"),
   join("tree_sitter", "parser.h"),

@@ -1,0 +1,3 @@
+from types import CapsuleType
+
+def language() -> CapsuleType: ...

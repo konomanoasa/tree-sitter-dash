@@ -637,27 +637,30 @@ test("delimiter source uses quote removal without command or parameter validatio
   }
 });
 
-test("editing escaped delimiter bytes switches between EOF body and a matching terminator", () => {
-  for (const [name, unmatchedWord, matchedWord] of [
-    ["hex-byte", "$'\\xFF'", "$'\\xC3\\xBF'"],
-    ["octal-byte", "$'\\377'", "$'\\303\\277'"],
-    ["joined-quotes", "$'\\xC3'", "$'\\xC3'$'\\277'"],
+test("editing delimiter spellings switches between EOF body and a matching terminator", () => {
+  for (const [name, unmatchedWord, matchedWord, delimiter] of [
+    ["hex-byte", "$'\\xFF'", "$'\\xC3\\xBF'", "ÿ"],
+    ["octal-byte", "$'\\377'", "$'\\303\\277'", "ÿ"],
+    ["joined-quotes", "$'\\xC3'", "$'\\xC3'$'\\277'", "ÿ"],
+    ["two-byte-parameter", `"\${é}"`, `'\${é}'`, `\${é}`],
+    ["three-byte-parameter", `"\${あ}"`, `'\${あ}'`, `\${あ}`],
+    ["four-byte-parameter", `"\${😀}"`, `'\${😀}'`, `\${😀}`],
   ]) {
     const sources = [
       {
         word: unmatchedWord,
         ends: [],
-        body: "body\nÿ\necho AFTER\n",
+        body: `body\n${delimiter}\necho AFTER\n`,
         commands: ["cat"],
       },
       {
         word: matchedWord,
-        ends: ["ÿ"],
+        ends: [delimiter],
         body: "body\n",
         commands: ["cat", "echo"],
       },
     ].map(({ word, ends, body, commands }) => {
-      const source = `cat <<${word}\nbody\nÿ\necho AFTER\n`;
+      const source = `cat <<${word}\nbody\n${delimiter}\necho AFTER\n`;
       const file = writeSource(name, source);
       const nodes = sourceNodes(parseValidCst(file), source);
       for (const [type, expected] of [
@@ -677,12 +680,12 @@ test("editing escaped delimiter bytes switches between EOF body and a matching t
     const [unmatched, matched] = sources;
     const remove = {
       byte: 6,
-      deleteBytes: matchedWord.length,
+      deleteBytes: Buffer.byteLength(matchedWord),
       insert: unmatchedWord,
     };
     const repair = {
       byte: 6,
-      deleteBytes: unmatchedWord.length,
+      deleteBytes: Buffer.byteLength(unmatchedWord),
       insert: matchedWord,
     };
     assertIncrementalEqualsFresh(
@@ -707,39 +710,39 @@ test("editing escaped delimiter bytes switches between EOF body and a matching t
   }
 });
 
-test("delimiter parameter prefixes preserve byte boundaries across UTF-8 widths and quoting", () => {
-  for (const character of ["é", "あ", "😀"]) {
-    for (const [prefix, matches] of [
-      ["", false],
-      ["#", true],
-      ["a", true],
-      ["a:", true],
-      ["a:-", true],
-    ]) {
+test("delimiter parameter prefixes follow C-locale byte handling across UTF-8 widths and quoting", () => {
+  for (const character of ["\u0080", "é", "あ", "😀"]) {
+    for (const prefix of ["", "#", "a", "a:", "a:-"]) {
       const spelling = `\${${prefix}${character}}`;
-      for (const [word, end] of [
-        [spelling, matches ? spelling : undefined],
-        [`"${spelling}"`, matches ? spelling : undefined],
-        [`'${spelling}'`, spelling],
-        [`\\${spelling}`, spelling],
+      for (const [word, matches] of [
+        [spelling, prefix !== ""],
+        [`"${spelling}"`, prefix !== ""],
+        [`'${spelling}'`, true],
+        [`\\${spelling}`, true],
       ]) {
         const source = `cat <<${word}\nBODY\n${spelling}\nprintf AFTER\n`;
-        // Unquoted mismatches leave a parameter expression in the body.
-        if (end === undefined && word === spelling) continue;
-        const nodes = sourceNodes(
-          parseValidCst(writeSource("multibyte-delimiter", source)),
-          source,
-        );
+        const file = writeSource("multibyte-delimiter", source);
+        if (!matches && word === spelling) {
+          assert.equal(
+            runParse({ source: file, mode: "recovery" }).recovery,
+            true,
+            source,
+          );
+          continue;
+        }
+        const nodes = sourceNodes(parseValidCst(file), source);
         assert.deepEqual(
           nodes
             .filter(({ type }) => type === "here_document_end_text")
             .map(({ text }) => text),
-          end === undefined ? [] : [end],
+          matches ? [spelling] : [],
           source,
         );
-        assert.equal(
-          nodes.filter(({ type }) => type === "cmd_name").length,
-          end === undefined ? 1 : 2,
+        assert.deepEqual(
+          nodes
+            .filter(({ type }) => type === "cmd_name")
+            .map(({ text }) => text),
+          matches ? ["cat", "printf"] : ["cat"],
           source,
         );
       }

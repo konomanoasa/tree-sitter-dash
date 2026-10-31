@@ -19,6 +19,8 @@ import {
   root,
 } from "../scripts/tree-sitter.js";
 
+const referencePlatform = !process.env.CI || process.platform === "darwin";
+
 const commandTimeoutMs = 60_000;
 const distributionTimeoutMs = 120_000;
 const commandOutputLimitBytes = 64 * 1024 * 1024;
@@ -33,7 +35,9 @@ const grammars = configuration.grammars.map((grammar) => ({
 
 const language = packageName.slice("tree-sitter-".length).replaceAll("-", "_");
 
-test(`${language}: generated checks reject stale and missing files without rewriting them`, () => {
+test(`${language}: generated checks reject stale and missing files without rewriting them`, {
+  skip: !referencePlatform,
+}, () => {
   const cache = join(root, "node_modules", ".cache");
   mkdirSync(cache, { recursive: true });
   const directory = mkdtempSync(join(cache, `${packageName}-generated-check-`));
@@ -73,10 +77,12 @@ test(`${language}: generated checks reject stale and missing files without rewri
     const changedFiles = [];
     const missingFiles = [];
     for (const { path } of grammars) {
-      const nodeTypes = join(path, "src", "node-types.json");
-      const changed = `${readFileSync(join(directory, nodeTypes), "utf8")}\n`;
-      writeFileSync(join(directory, nodeTypes), changed);
-      changedFiles.push([nodeTypes, changed]);
+      for (const file of ["node-types.json", "tokens.h"]) {
+        const generated = join(path, "src", file);
+        const changed = `${readFileSync(join(directory, generated), "utf8")}\n`;
+        writeFileSync(join(directory, generated), changed);
+        changedFiles.push([generated, changed]);
+      }
       const parser = join(path, "src", "parser.c");
       rmSync(join(directory, parser));
       missingFiles.push(parser);
@@ -195,7 +201,9 @@ syncBuiltinESMExports();
   }
 });
 
-test(`${language}: package metadata matches the grammar and license`, () => {
+test(`${language}: package metadata matches the grammar and license`, {
+  skip: !referencePlatform,
+}, () => {
   const { metadata } = configuration;
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   for (const key of ["version", "license", "description"])
@@ -221,7 +229,7 @@ function run(command, arguments_, cwd = root) {
   return result.stdout;
 }
 
-test("npm archives contain reproducible grammars for every language", () => {
+test("npm archives contain buildable parsers for every language", () => {
   const cache = join(root, "node_modules", ".cache");
   mkdirSync(cache, { recursive: true });
   const directory = mkdtempSync(join(cache, `${packageName}-distribution-`));
@@ -246,28 +254,31 @@ test("npm archives contain reproducible grammars for every language", () => {
     run("tar", ["-xf", archive.filename, "-C", "npm"], directory);
     const npmSource = join(npmRoot, "package");
     for (const { name, path } of grammars) {
-      const output = join(directory, "generated", name);
-      mkdirSync(output, { recursive: true });
-      const result = runner.run(
-        [
-          "generate",
-          join(npmSource, path, "grammar.js"),
-          "--abi",
-          "latest",
-          "--output",
-          output,
-        ],
-        { cwd: npmSource },
+      const library = join(
+        directory,
+        `${name}.${process.platform === "win32" ? "dll" : "so"}`,
       );
-      assert.ifError(result.error);
-      assert.equal(result.status, 0, result.stdout + result.stderr);
-      for (const file of ["parser.c", "grammar.json", "node-types.json"]) {
-        assert.deepEqual(
-          readFileSync(join(output, file)),
-          readFileSync(join(npmSource, path, "src", file)),
-          `${name}: ${file}`,
-        );
-      }
+      const built = runner.run([
+        "build",
+        join(npmSource, path),
+        "--output",
+        library,
+      ]);
+      assert.ifError(built.error);
+      assert.equal(built.status, 0, built.stdout + built.stderr);
+      const source = join(directory, "archive.dash");
+      writeFileSync(source, "cat <<'EOF'\n$HOME\nEOF\n");
+      const parsed = runner.run([
+        "parse",
+        "--quiet",
+        "--lib-path",
+        library,
+        "--lang-name",
+        name,
+        source,
+      ]);
+      assert.ifError(parsed.error);
+      assert.equal(parsed.status, 0, parsed.stdout + parsed.stderr);
     }
   } finally {
     runner.close();

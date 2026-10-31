@@ -12,9 +12,9 @@
       "external-files": [
         "src/arithmetic.h",
         "src/input.h",
-        "src/lexical-tokens.h",
-        "src/lexical-tokens.json",
-        "src/source.h"
+        "src/source.h",
+        "src/tokens.h",
+        "src/tokens.json"
       ]
     }
   ],
@@ -30,7 +30,7 @@
     "c": false,
     "go": false,
     "node": false,
-    "python": false,
+    "python": true,
     "rust": true,
     "swift": false
   }

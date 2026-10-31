@@ -11,7 +11,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import lexicalTokens from "../src/lexical-tokens.json" with { type: "json" };
+import tokens from "../src/tokens.json" with { type: "json" };
 
 const root = resolve(import.meta.dirname, "..");
 const packageName = JSON.parse(readFileSync(join(root, "package.json"), "utf8"))
@@ -171,10 +171,14 @@ function runChecked(runner, arguments_, options = { stdio: "inherit" }) {
   return resultStatus(runner.run(arguments_, options));
 }
 
-function lexicalTokenHeader() {
+function tokenHeader() {
+  const enumerators = new Map(
+    tokens.map(({ name, scanner }) => [name, scanner]),
+  );
   const groups = {
-    ...lexicalTokens,
-    whole: lexicalTokens.lexical.filter(({ whole }) => whole),
+    lexical: tokens.filter(({ kind }) => kind === "lexical"),
+    physical: tokens.filter(({ kind }) => kind === "physical"),
+    whole: tokens.filter(({ whole }) => whole),
   };
   const macros = Object.entries(groups).map(([kind, entries]) => {
     const suffixes =
@@ -183,18 +187,17 @@ function lexicalTokenHeader() {
         : kind === "whole"
           ? ["whole"]
           : ["prefix", "character"];
-    const rows = entries.map(({ begin, scanner }) => {
+    const rows = entries.map(({ name, scanner }) => {
       const symbols = [
         scanner,
-        ...suffixes.map((suffix) =>
-          `${begin.slice(1)}_${suffix}`.toUpperCase(),
-        ),
+        ...suffixes.map((suffix) => enumerators.get(`${name}_${suffix}`)),
       ];
       return `  X(${symbols.join(", ")})`;
     });
     return `#define DASH_${kind.toUpperCase()}_SOURCE_TOKENS(X) \\\n${rows.join(" \\\n")}`;
   });
-  return `/* Generated from lexical-tokens.json by npm run generate. */\n\n#ifndef TREE_SITTER_DASH_LEXICAL_TOKENS_H_\n#define TREE_SITTER_DASH_LEXICAL_TOKENS_H_\n\n${macros.join("\n\n")}\n\n#endif\n`;
+  const enumerations = tokens.map(({ scanner }) => `  ${scanner},`);
+  return `/* Generated from tokens.json by npm run generate. */\n\n#ifndef TREE_SITTER_DASH_TOKENS_H_\n#define TREE_SITTER_DASH_TOKENS_H_\n\nenum TokenType {\n${enumerations.join("\n")}\n  TOKEN_COUNT,\n};\n\n${macros.join("\n\n")}\n\n#endif\n`;
 }
 
 function generateParsers(outputRoot = root) {
@@ -218,7 +221,7 @@ function generateParsers(outputRoot = root) {
     if (status !== 0) {
       return status;
     }
-    writeFileSync(join(output, "lexical-tokens.h"), lexicalTokenHeader());
+    writeFileSync(join(output, "tokens.h"), tokenHeader());
   }
   return 0;
 }

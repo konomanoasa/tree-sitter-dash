@@ -32,7 +32,3 @@ npm test
 ## License
 
 [MIT](LICENSE)
-
-## Used By
-
-[dash-ts-mode](https://github.com/konomanoasa/dash-ts-mode)
