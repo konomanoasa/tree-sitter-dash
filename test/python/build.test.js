@@ -44,7 +44,7 @@ test("Python metadata matches the grammar and license", {
   const { metadata } = JSON.parse(
     readFileSync(join(root, "tree-sitter.json"), "utf8"),
   );
-  assert.equal(project.name, `konomanoasa-${packageName}`);
+  assert.equal(project.name, packageName);
   for (const key of ["version", "description", "license"]) {
     assert.equal(project[key], metadata[key]);
   }

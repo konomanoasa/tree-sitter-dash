@@ -217,33 +217,6 @@ wheels = [
 ]
 
 [[package]]
-name = "konomanoasa-tree-sitter-dash"
-version = "0.4.0"
-source = { editable = "." }
-
-[package.dev-dependencies]
-dev = [
-    { name = "poethepoet" },
-    { name = "ruff" },
-    { name = "setuptools" },
-    { name = "tree-sitter" },
-    { name = "twine" },
-    { name = "ty" },
-]
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "poethepoet", specifier = "==0.49.0" },
-    { name = "ruff", specifier = "==0.17.3" },
-    { name = "setuptools", specifier = "==84.2.1" },
-    { name = "tree-sitter", specifier = "==0.26.0" },
-    { name = "twine", specifier = "==7.0.0" },
-    { name = "ty", specifier = "==0.0.95" },
-]
-
-[[package]]
 name = "markdown-it-py"
 version = "4.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -466,6 +439,33 @@ name = "tree-sitter"
 version = "0.26.0"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f7/03/5600b84aff2e6c4fe80cfebb4063fe2f50299521befe5f6092ab8c082f4a/tree_sitter-0.26.0.tar.gz", hash = "sha256:b40c219edccc4564530c96f8f1556f6202b37cda964d1cbd7bd2b7e68b40a245", size = 191423, upload-time = "2026-06-30T12:14:27.933Z" }
+
+[[package]]
+name = "tree-sitter-dash"
+version = "0.4.0"
+source = { editable = "." }
+
+[package.dev-dependencies]
+dev = [
+    { name = "poethepoet" },
+    { name = "ruff" },
+    { name = "setuptools" },
+    { name = "tree-sitter" },
+    { name = "twine" },
+    { name = "ty" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "poethepoet", specifier = "==0.49.0" },
+    { name = "ruff", specifier = "==0.17.3" },
+    { name = "setuptools", specifier = "==84.2.1" },
+    { name = "tree-sitter", specifier = "==0.26.0" },
+    { name = "twine", specifier = "==7.0.0" },
+    { name = "ty", specifier = "==0.0.95" },
+]
 
 [[package]]
 name = "twine"
