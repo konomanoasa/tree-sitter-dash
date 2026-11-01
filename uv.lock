@@ -442,7 +442,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/f7/03/5600b84aff2e6c4fe
 
 [[package]]
 name = "tree-sitter-dash"
-version = "0.4.0"
+version = "0.5.0"
 source = { editable = "." }
 
 [package.dev-dependencies]
