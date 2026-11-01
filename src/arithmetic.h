@@ -12,11 +12,7 @@ enum ArithmeticValidation {
 };
 
 static bool arithmetic_whitespace(int32_t character) {
-  return character == ' ' ||
-    character == '\t' ||
-    character == '\n' ||
-    character == '\v' ||
-    character == '\f';
+  return character == ' ' || character == '\t' || character == '\n';
 }
 
 static bool is_decimal_digit(int32_t character) {

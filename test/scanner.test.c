@@ -6,6 +6,45 @@
 
 #include "../src/scanner.c"
 
+static struct Scanner *test_state_create(void) {
+  return ts_calloc(1, sizeof(struct Scanner));
+}
+
+static void test_state_destroy(struct Scanner *state) {
+  if (state == NULL) return;
+  clear_scanner(state);
+  ts_free(state);
+}
+
+static void test_state_deserialize(
+  struct Scanner *state,
+  const char *buffer,
+  unsigned length
+) {
+  if (state == NULL) return;
+  struct ScannerPayload payload = {.state = *state};
+  tree_sitter_dash_external_scanner_deserialize(&payload, buffer, length);
+  char cached[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+  char canonical[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+  unsigned cached_length =
+    tree_sitter_dash_external_scanner_serialize(&payload, cached);
+  assert(cached_length == scanner_serialize(&payload.state, canonical));
+  assert(memcmp(cached, canonical, cached_length) == 0);
+  *state = payload.state;
+}
+
+static bool
+test_state_scan(struct Scanner *state, TSLexer *lexer, const bool *valid) {
+  if (state == NULL) return false;
+  struct ScannerPayload payload = {.state = *state};
+  payload.length = scanner_serialize(state, payload.bytes);
+  if (payload.length == 0) return false;
+  bool accepted =
+    tree_sitter_dash_external_scanner_scan(&payload, lexer, valid);
+  *state = payload.state;
+  return accepted;
+}
+
 #define ARRAY_LENGTH(array) (sizeof(array) / sizeof((array)[0]))
 
 static const size_t two_byte_varint_minimum = 128;
@@ -1396,8 +1435,7 @@ static unsigned snapshot_scanner(
 ) {
   char guarded[TREE_SITTER_SERIALIZATION_BUFFER_SIZE + 2];
   memset(guarded, state_guard_byte, sizeof(guarded));
-  unsigned length =
-    tree_sitter_dash_external_scanner_serialize((void *)scanner, guarded + 1);
+  unsigned length = scanner_serialize(scanner, guarded + 1);
   assert(length > 0 && length <= TREE_SITTER_SERIALIZATION_BUFFER_SIZE);
   assert(guarded[0] == state_guard_byte);
   for (size_t index = length + 1; index < sizeof(guarded); index++) {
@@ -1438,7 +1476,7 @@ fill_pending_document_to_capacity(struct Scanner *scanner, size_t index) {
 }
 
 static struct Scanner *make_exact_fit_scanner(void) {
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
   assert(scanner != NULL);
   assert(append_pending_document(
     scanner,
@@ -1534,11 +1572,7 @@ test_here_document_end_restores_its_source_and_serialized_depth(void) {
   char before[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
   unsigned before_length = snapshot_scanner(&scanner, before);
   clear_scanner(&scanner);
-  tree_sitter_dash_external_scanner_deserialize(
-    &scanner,
-    before,
-    before_length
-  );
+  test_state_deserialize(&scanner, before, before_length);
 
   const int32_t source[] = {'O', 'U', 'T', '\n'};
   struct MockLexer lexer;
@@ -1548,7 +1582,7 @@ test_here_document_end_restores_its_source_and_serialized_depth(void) {
 #ifdef TREE_SITTER_REUSE_ALLOCATOR
   size_t first_allocation = reuse_allocation_calls;
 #endif
-  assert(tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid));
+  assert(test_state_scan(&scanner, &lexer.lexer, valid));
 #ifdef TREE_SITTER_REUSE_ALLOCATOR
   size_t allocation_count = reuse_allocation_calls - first_allocation;
 #endif
@@ -1565,13 +1599,13 @@ test_here_document_end_restores_its_source_and_serialized_depth(void) {
   char after[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
   unsigned after_length = snapshot_scanner(&scanner, after);
   clear_scanner(&scanner);
-  tree_sitter_dash_external_scanner_deserialize(&scanner, after, after_length);
+  test_state_deserialize(&scanner, after, after_length);
   assert_scanner_matches_snapshot(&scanner, after, after_length);
   assert(scanner.active_frame.documents[0].ending);
   valid[HERE_DOCUMENT_END_BEGIN] = false;
   valid[HERE_DOCUMENT_END_TEXT_BEGIN] = true;
   init_mock_lexer(&lexer, source, 4);
-  assert(tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid));
+  assert(test_state_scan(&scanner, &lexer.lexer, valid));
   assert(lexer.lexer.result_symbol == HERE_DOCUMENT_END_TEXT_BEGIN);
   clear_scanner(&scanner);
 
@@ -1579,16 +1613,10 @@ test_here_document_end_restores_its_source_and_serialized_depth(void) {
   valid[HERE_DOCUMENT_END_TEXT_BEGIN] = false;
   valid[HERE_DOCUMENT_END_BEGIN] = true;
   for (size_t failure = 1; failure <= allocation_count; failure += 1) {
-    tree_sitter_dash_external_scanner_deserialize(
-      &scanner,
-      before,
-      before_length
-    );
+    test_state_deserialize(&scanner, before, before_length);
     reuse_fail_allocation_call = reuse_allocation_calls + failure;
     init_mock_lexer(&lexer, source, 4);
-    assert(
-      !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(!test_state_scan(&scanner, &lexer.lexer, valid));
     reuse_fail_allocation_call = 0;
     assert_scanner_matches_snapshot(&scanner, before, before_length);
     clear_scanner(&scanner);
@@ -1598,7 +1626,7 @@ test_here_document_end_restores_its_source_and_serialized_depth(void) {
 }
 
 static void test_disabled_and_rejected_recovery_scans_preserve_state(void) {
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
   assert(scanner != NULL);
 
   scanner->sequence_end_pending = true;
@@ -1624,22 +1652,14 @@ static void test_disabled_and_rejected_recovery_scans_preserve_state(void) {
   for (size_t index = 0; index < ARRAY_LENGTH(inputs); index += 1) {
     struct MockLexer mock;
     init_mock_lexer(&mock, inputs[index].source, inputs[index].length);
-    assert(!tree_sitter_dash_external_scanner_scan(
-      scanner,
-      &mock.lexer,
-      valid_symbols
-    ));
+    assert(!test_state_scan(scanner, &mock.lexer, valid_symbols));
     assert_scanner_matches_snapshot(scanner, before, before_length);
     bool disabled_symbols[TOKEN_COUNT] = {false};
     init_mock_lexer(&mock, inputs[index].source, inputs[index].length);
-    assert(!tree_sitter_dash_external_scanner_scan(
-      scanner,
-      &mock.lexer,
-      disabled_symbols
-    ));
+    assert(!test_state_scan(scanner, &mock.lexer, disabled_symbols));
     assert_scanner_matches_snapshot(scanner, before, before_length);
   }
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(scanner);
 }
 
 static void
@@ -1670,25 +1690,19 @@ test_recovery_emits_newlines_without_reclassifying_continuations(void) {
   for (size_t index = 0; index < ARRAY_LENGTH(expected); index += 1) {
     struct MockLexer lexer;
     init_mock_lexer(&lexer, input + offset, ARRAY_LENGTH(input) - offset);
-    assert(
-      tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(test_state_scan(&scanner, &lexer.lexer, valid));
     assert(lexer.lexer.result_symbol == expected[index].symbol);
     assert(lexer.mark == expected[index].length);
     offset += lexer.mark;
     state_length = snapshot_scanner(&scanner, state);
-    tree_sitter_dash_external_scanner_deserialize(
-      &scanner,
-      state,
-      state_length
-    );
+    test_state_deserialize(&scanner, state, state_length);
     assert_scanner_matches_snapshot(&scanner, state, state_length);
   }
   assert(offset == 6);
   assert(!scanner.emission.active);
   struct MockLexer lexer;
   init_mock_lexer(&lexer, input + offset, 1);
-  assert(tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid));
+  assert(test_state_scan(&scanner, &lexer.lexer, valid));
   assert(lexer.lexer.result_symbol == WORD_INITIAL_LITERAL_BEGIN);
   assert(lexer.mark == 0);
   assert(scanner.emission.symbol == WORD_INITIAL_LITERAL_BEGIN_WHOLE);
@@ -1753,18 +1767,14 @@ test_recovery_preserves_reserved_and_punctuation_token_identity(void) {
     struct Scanner scanner = {0};
     struct MockLexer lexer;
     init_mock_lexer(&lexer, cases[index].source, cases[index].length);
-    assert(
-      tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(test_state_scan(&scanner, &lexer.lexer, valid));
     assert(lexer.lexer.result_symbol == cases[index].begin);
     assert(lexer.mark == 0);
     char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
     unsigned length = snapshot_scanner(&scanner, state);
-    tree_sitter_dash_external_scanner_deserialize(&scanner, state, length);
+    test_state_deserialize(&scanner, state, length);
     init_mock_lexer(&lexer, cases[index].source, cases[index].length);
-    assert(
-      tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(test_state_scan(&scanner, &lexer.lexer, valid));
     assert(lexer.lexer.result_symbol == cases[index].piece);
     assert(lexer.mark == cases[index].width);
     assert(!scanner.emission.active);
@@ -1804,15 +1814,13 @@ test_recovery_preserves_reserved_and_punctuation_token_identity(void) {
         continued + offset,
         ARRAY_LENGTH(continued) - offset
       );
-      assert(
-        tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-      );
+      assert(test_state_scan(&scanner, &lexer.lexer, valid));
       assert(lexer.lexer.result_symbol == expected[recovery][index].symbol);
       assert(lexer.mark == expected[recovery][index].width);
       offset += lexer.mark;
       char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
       unsigned length = snapshot_scanner(&scanner, state);
-      tree_sitter_dash_external_scanner_deserialize(&scanner, state, length);
+      test_state_deserialize(&scanner, state, length);
     }
     assert(offset == 4);
     assert(!scanner.emission.active);
@@ -1884,15 +1892,13 @@ test_recovery_parameter_escapes_leave_the_closing_brace_available(void) {
     for (size_t step = 0; step < ARRAY_LENGTH(symbols); step += 1) {
       struct MockLexer lexer;
       init_mock_lexer(&lexer, source + offset, ARRAY_LENGTH(source) - offset);
-      assert(
-        tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-      );
+      assert(test_state_scan(&scanner, &lexer.lexer, valid));
       assert(lexer.lexer.result_symbol == symbols[step]);
       assert(lexer.mark == widths[step]);
       offset += lexer.mark;
       char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
       unsigned length = snapshot_scanner(&scanner, state);
-      tree_sitter_dash_external_scanner_deserialize(&scanner, state, length);
+      test_state_deserialize(&scanner, state, length);
       assert_scanner_matches_snapshot(&scanner, state, length);
     }
     assert(offset == ARRAY_LENGTH(source));
@@ -1930,29 +1936,23 @@ test_parenthesis_recovery_defers_substitution_state_to_grammar(void) {
     for (size_t part = 0; part < ARRAY_LENGTH(expected); part += 1) {
       struct MockLexer lexer;
       init_mock_lexer(&lexer, source, 1);
-      assert(
-        tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-      );
+      assert(test_state_scan(&scanner, &lexer.lexer, valid));
       assert(lexer.lexer.result_symbol == expected[part]);
       assert(lexer.mark == part);
       assert(scanner.context_count == 2);
       assert(scanner.substitution_depth == 1);
       char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
       unsigned length = snapshot_scanner(&scanner, state);
-      tree_sitter_dash_external_scanner_deserialize(&scanner, state, length);
+      test_state_deserialize(&scanner, state, length);
     }
     struct MockLexer lexer;
     init_mock_lexer(&lexer, NULL, 0);
-    assert(
-      !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(!test_state_scan(&scanner, &lexer.lexer, valid));
     assert(scanner.context_count == 2);
     memset(valid, 0, sizeof(valid));
     valid[ends[index]] = true;
     init_mock_lexer(&lexer, NULL, 0);
-    assert(
-      tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(test_state_scan(&scanner, &lexer.lexer, valid));
     assert(lexer.lexer.result_symbol == ends[index]);
     assert(lexer.mark == 0);
     assert(scanner.context_count == 1);
@@ -1966,8 +1966,8 @@ test_parenthesis_recovery_defers_substitution_state_to_grammar(void) {
 }
 
 static void test_state_round_trip(void) {
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
-  struct Scanner *restored = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
+  struct Scanner *restored = test_state_create();
   assert(scanner != NULL);
   assert(restored != NULL);
 
@@ -2014,7 +2014,7 @@ static void test_state_round_trip(void) {
   unsigned length = snapshot_scanner(scanner, serialized);
   assert((uint8_t)serialized[0] == SCANNER_SERIALIZATION_VERSION);
 
-  tree_sitter_dash_external_scanner_deserialize(restored, serialized, length);
+  test_state_deserialize(restored, serialized, length);
 
   assert(restored->sequence_end_pending);
   assert(restored->active_frame.at_line_start);
@@ -2051,11 +2051,11 @@ static void test_state_round_trip(void) {
   );
   assert_scanner_matches_snapshot(restored, serialized, length);
 
-  tree_sitter_dash_external_scanner_deserialize(restored, NULL, 0);
+  test_state_deserialize(restored, NULL, 0);
   assert_scanner_matches_snapshot(restored, initial, initial_length);
 
-  tree_sitter_dash_external_scanner_destroy(restored);
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(restored);
+  test_state_destroy(scanner);
 }
 
 static void test_equal_source_contexts_preserve_each_policy_restore(void) {
@@ -2081,7 +2081,7 @@ static void test_equal_source_contexts_preserve_each_policy_restore(void) {
   char serialized[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
   unsigned length = snapshot_scanner(&scanner, serialized);
   struct Scanner restored = {0};
-  tree_sitter_dash_external_scanner_deserialize(&restored, serialized, length);
+  test_state_deserialize(&restored, serialized, length);
   assert_scanner_matches_snapshot(&restored, serialized, length);
   assert(restored.contexts[1].count == context_count - 1);
   for (size_t index = 0; index < context_count - 1; index += 1) {
@@ -2124,7 +2124,7 @@ static void test_substitution_contexts_suspend_the_enclosing_body_stage(void) {
   char serialized[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
   unsigned length = snapshot_scanner(&scanner, serialized);
   struct Scanner restored = {0};
-  tree_sitter_dash_external_scanner_deserialize(&restored, serialized, length);
+  test_state_deserialize(&restored, serialized, length);
   assert_scanner_matches_snapshot(&restored, serialized, length);
   assert(restored.contexts[2].suspends_body);
   assert(restored.source.stages[1].disabled);
@@ -2158,11 +2158,7 @@ static void test_source_context_counts_round_trip_and_reject_overflow(void) {
     char serialized[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
     unsigned length = snapshot_scanner(&scanner, serialized);
     struct Scanner restored = {0};
-    tree_sitter_dash_external_scanner_deserialize(
-      &restored,
-      serialized,
-      length
-    );
+    test_state_deserialize(&restored, serialized, length);
     assert_scanner_matches_snapshot(&restored, serialized, length);
     assert(restored.context_count == 1);
     assert(restored.contexts[0].count == counts[index]);
@@ -2185,7 +2181,7 @@ static void test_source_context_counts_round_trip_and_reject_overflow(void) {
   unsigned length = snapshot_scanner(&scanner, serialized);
   assert(serialized[length - 3] == 1);
   serialized[length - 3] = 0;
-  tree_sitter_dash_external_scanner_deserialize(&restored, serialized, length);
+  test_state_deserialize(&restored, serialized, length);
   assert_scanner_matches_snapshot(&restored, empty_state, empty_length);
 
   assert(source_context_push(&scanner, PARAMETER_OPEN));
@@ -2195,7 +2191,7 @@ static void test_source_context_counts_round_trip_and_reject_overflow(void) {
   assert_scanner_matches_snapshot(&scanner, serialized, length);
   assert(serialized[length - 3] == 1);
   serialized[length - 3] = 2;
-  tree_sitter_dash_external_scanner_deserialize(&restored, serialized, length);
+  test_state_deserialize(&restored, serialized, length);
   assert_scanner_matches_snapshot(&restored, empty_state, empty_length);
   clear_scanner(&restored);
   clear_scanner(&scanner);
@@ -2212,14 +2208,14 @@ static void test_bracket_chains_round_trip_and_reject_unknown_phases(void) {
   scanner.contexts[0].bracket_chains = BRACKET_CHAINS_LIMIT - 1;
   char serialized[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
   unsigned length = snapshot_scanner(&scanner, serialized);
-  tree_sitter_dash_external_scanner_deserialize(&restored, serialized, length);
+  test_state_deserialize(&restored, serialized, length);
   assert_scanner_matches_snapshot(&restored, serialized, length);
   assert(restored.context_count == 1);
   assert(restored.contexts[0].bracket_chains == BRACKET_CHAINS_LIMIT - 1);
 
   scanner.contexts[0].bracket_chains = BRACKET_CHAINS_LIMIT;
   length = snapshot_scanner(&scanner, serialized);
-  tree_sitter_dash_external_scanner_deserialize(&restored, serialized, length);
+  test_state_deserialize(&restored, serialized, length);
   assert_scanner_matches_snapshot(&restored, empty_state, empty_length);
   clear_scanner(&restored);
   clear_scanner(&scanner);
@@ -2237,7 +2233,7 @@ static void test_lone_word_contexts_round_trip_and_block_the_remainder(void) {
   char serialized[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
   unsigned length = snapshot_scanner(&scanner, serialized);
   assert(serialized[length - 2] == 2);
-  tree_sitter_dash_external_scanner_deserialize(&restored, serialized, length);
+  test_state_deserialize(&restored, serialized, length);
   assert_scanner_matches_snapshot(&restored, serialized, length);
   assert(restored.context_count == 1);
   assert(restored.contexts[0].lone_word);
@@ -2248,15 +2244,11 @@ static void test_lone_word_contexts_round_trip_and_block_the_remainder(void) {
   valid[BACKQUOTE_REMAINDER_PARENTHESIS_BEGIN] = true;
   struct MockLexer lexer;
   init_mock_lexer(&lexer, parenthesis, ARRAY_LENGTH(parenthesis));
-  assert(
-    !tree_sitter_dash_external_scanner_scan(&restored, &lexer.lexer, valid)
-  );
+  assert(!test_state_scan(&restored, &lexer.lexer, valid));
   assert_scanner_matches_snapshot(&restored, serialized, length);
   restored.contexts[0].lone_word = false;
   init_mock_lexer(&lexer, parenthesis, ARRAY_LENGTH(parenthesis));
-  assert(
-    tree_sitter_dash_external_scanner_scan(&restored, &lexer.lexer, valid)
-  );
+  assert(test_state_scan(&restored, &lexer.lexer, valid));
   assert(lexer.lexer.result_symbol == BACKQUOTE_REMAINDER_PARENTHESIS_BEGIN);
   assert(lexer.mark == 0);
   clear_scanner(&restored);
@@ -2267,13 +2259,13 @@ static void test_lone_word_contexts_round_trip_and_block_the_remainder(void) {
   valid[FNAME_TOKEN] = true;
   scanner.contexts[0].lone_word = false;
   init_mock_lexer(&lexer, escaped, ARRAY_LENGTH(escaped));
-  assert(tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid));
+  assert(test_state_scan(&scanner, &lexer.lexer, valid));
   assert(lexer.lexer.result_symbol == WORD_INITIAL_ESCAPED_CHARACTER_BEGIN);
   assert(scanner.contexts[0].lone_word);
   valid[FNAME_TOKEN] = false;
   scanner.emission = (struct LexicalEmission){0};
   init_mock_lexer(&lexer, escaped, ARRAY_LENGTH(escaped));
-  assert(tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid));
+  assert(test_state_scan(&scanner, &lexer.lexer, valid));
   assert(!scanner.contexts[0].lone_word);
 
   const int32_t redirect[] = {'>', 'f'};
@@ -2282,7 +2274,7 @@ static void test_lone_word_contexts_round_trip_and_block_the_remainder(void) {
   scanner.contexts[0].lone_word = true;
   scanner.emission = (struct LexicalEmission){0};
   init_mock_lexer(&lexer, redirect, ARRAY_LENGTH(redirect));
-  assert(tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid));
+  assert(test_state_scan(&scanner, &lexer.lexer, valid));
   assert(lexer.lexer.result_symbol == PUNCT_GREATER);
   assert(!scanner.contexts[0].lone_word);
   clear_scanner(&scanner);
@@ -2292,7 +2284,7 @@ static void test_lone_word_contexts_round_trip_and_block_the_remainder(void) {
   length = snapshot_scanner(&scanner, serialized);
   assert(serialized[length - 2] == 0);
   serialized[length - 2] = 2;
-  tree_sitter_dash_external_scanner_deserialize(&restored, serialized, length);
+  test_state_deserialize(&restored, serialized, length);
   assert_scanner_matches_snapshot(&restored, empty_state, empty_length);
   clear_scanner(&restored);
   clear_scanner(&scanner);
@@ -2343,18 +2335,12 @@ static void test_document_eof_follows_removed_source_at_line_start(void) {
         fixtures[index].source + offset,
         fixtures[index].length - offset
       );
-      assert(
-        tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-      );
+      assert(test_state_scan(&scanner, &lexer.lexer, valid));
       assert(lexer.lexer.result_symbol == expected[step]);
       offset += lexer.mark;
       char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
       unsigned state_length = snapshot_scanner(&scanner, state);
-      tree_sitter_dash_external_scanner_deserialize(
-        &scanner,
-        state,
-        state_length
-      );
+      test_state_deserialize(&scanner, state, state_length);
     }
     assert(offset == fixtures[index].length);
     assert(scanner.active_frame.count == 0);
@@ -2496,11 +2482,7 @@ static void test_here_document_line_start_only_emits_valid_tokens(void) {
       valid_symbols[HERE_DOCUMENT_CONTENT_LINE_START] =
         fixtures[index].content_valid;
       valid_symbols[end] = fixtures[index].end_valid;
-      bool accepted = tree_sitter_dash_external_scanner_scan(
-        &scanner,
-        &mock.lexer,
-        valid_symbols
-      );
+      bool accepted = test_state_scan(&scanner, &mock.lexer, valid_symbols);
       assert(accepted == (fixtures[index].expected != TOKEN_COUNT));
       if (accepted) {
         enum TokenType expected =
@@ -2542,8 +2524,7 @@ static void assert_boundary_scan(
   unsigned before_length = snapshot_scanner(scanner, before);
   struct MockLexer lexer;
   init_mock_lexer(&lexer, input, length);
-  bool accepted =
-    tree_sitter_dash_external_scanner_scan(scanner, &lexer.lexer, valid);
+  bool accepted = test_state_scan(scanner, &lexer.lexer, valid);
   assert(accepted == (expected != TOKEN_COUNT));
   if (accepted) {
     assert(lexer.lexer.result_symbol == expected);
@@ -2744,8 +2725,8 @@ static void test_document_newline_boundaries_preserve_document_ownership(void) {
 }
 
 static void test_old_state_is_rejected(void) {
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
-  struct Scanner *restored = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
+  struct Scanner *restored = test_state_create();
   assert(scanner != NULL);
   assert(restored != NULL);
 
@@ -2756,18 +2737,18 @@ static void test_old_state_is_rejected(void) {
 
   restored->assignment_tilde_allowed = true;
   restored->backquote_depth = 9;
-  tree_sitter_dash_external_scanner_deserialize(restored, serialized, length);
+  test_state_deserialize(restored, serialized, length);
   assert(!restored->assignment_tilde_allowed);
   assert(restored->backquote_depth == 0);
   assert(restored->pending_count == 0);
 
-  tree_sitter_dash_external_scanner_destroy(restored);
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(restored);
+  test_state_destroy(scanner);
 }
 
 static void test_exact_fit_state_round_trip(void) {
   struct Scanner *scanner = make_exact_fit_scanner();
-  struct Scanner *restored = tree_sitter_dash_external_scanner_create();
+  struct Scanner *restored = test_state_create();
   assert(restored != NULL);
   size_t delimiter_length = scanner->pending_documents[0].delimiter_length;
 
@@ -2775,7 +2756,7 @@ static void test_exact_fit_state_round_trip(void) {
   unsigned length = snapshot_scanner(scanner, serialized);
   assert(length == TREE_SITTER_SERIALIZATION_BUFFER_SIZE);
 
-  tree_sitter_dash_external_scanner_deserialize(restored, serialized, length);
+  test_state_deserialize(restored, serialized, length);
   assert(restored->pending_count == 1);
   assert_repeated_document(
     &restored->pending_documents[0],
@@ -2784,8 +2765,8 @@ static void test_exact_fit_state_round_trip(void) {
   );
   assert_scanner_matches_snapshot(restored, serialized, length);
 
-  tree_sitter_dash_external_scanner_destroy(restored);
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(restored);
+  test_state_destroy(scanner);
 }
 
 static void test_pending_document_rejects_oversized_state(void) {
@@ -2798,11 +2779,11 @@ static void test_pending_document_rejects_oversized_state(void) {
   assert_scanner_matches_snapshot(scanner, before, before_length);
 
   clear_document(&rejected);
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(scanner);
 }
 
 static void test_pending_activation_fits_after_depth_growth(void) {
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
   assert(scanner != NULL);
   scanner->substitution_depth = three_byte_varint_minimum;
   scanner->backquote_depth = three_byte_varint_minimum;
@@ -2829,13 +2810,13 @@ static void test_pending_activation_fits_after_depth_growth(void) {
   );
   char after[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
   assert(snapshot_scanner(scanner, after) == before_length - 1);
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(scanner);
 }
 
 static void test_pending_documents_suspend_and_resume_at_capacity(void) {
   const size_t pending_delimiter_bytes = 200;
   const size_t suspended_delimiter_bytes = 503;
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
   assert(scanner != NULL);
   assert(append_pending_document(
     scanner,
@@ -2882,7 +2863,7 @@ static void test_pending_documents_suspend_and_resume_at_capacity(void) {
   unsigned after_length = snapshot_scanner(scanner, after);
   assert(after_length == TREE_SITTER_SERIALIZATION_BUFFER_SIZE);
   struct Scanner restored = {0};
-  tree_sitter_dash_external_scanner_deserialize(&restored, after, after_length);
+  test_state_deserialize(&restored, after, after_length);
   assert_scanner_matches_snapshot(&restored, after, after_length);
   finish_active_document(&restored);
   assert(restored.active_frame.count == 1);
@@ -2911,13 +2892,13 @@ static void test_pending_documents_suspend_and_resume_at_capacity(void) {
     suspended_delimiter_bytes
   );
   clear_scanner(&restored);
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(scanner);
 }
 
 static void test_pending_activation_rejects_oversized_state(void) {
   const size_t pending_delimiter_bytes = 400;
   const size_t suspended_delimiter_bytes = 503;
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
   assert(scanner != NULL);
   assert(append_pending_document(
     scanner,
@@ -2936,7 +2917,7 @@ static void test_pending_activation_rejects_oversized_state(void) {
   assert(before_length == TREE_SITTER_SERIALIZATION_BUFFER_SIZE);
   assert(!activate_startable_pending_documents(scanner));
   assert_scanner_matches_snapshot(scanner, before, before_length);
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(scanner);
 }
 
 static void test_code_point_encoding(void) {
@@ -3035,16 +3016,13 @@ static bool line_matches_document(
   body_valid
     [quoted ? QUOTED_HERE_DOCUMENT_BODY_START : HERE_DOCUMENT_BODY_START] =
       true;
-  assert(
-    tree_sitter_dash_external_scanner_scan(&scanner, &mock.lexer, body_valid)
-  );
+  assert(test_state_scan(&scanner, &mock.lexer, body_valid));
   assert(mock.mark == 0);
   init_mock_lexer(&mock, line, line_length);
   bool end_valid[TOKEN_COUNT] = {false};
   end_valid[quoted ? QUOTED_HERE_DOCUMENT_END_BEGIN : HERE_DOCUMENT_END_BEGIN] =
     true;
-  bool result =
-    tree_sitter_dash_external_scanner_scan(&scanner, &mock.lexer, end_valid);
+  bool result = test_state_scan(&scanner, &mock.lexer, end_valid);
   clear_scanner(&scanner);
   return result;
 }
@@ -3175,8 +3153,7 @@ static bool scan_delimiter_fixture(
   init_mock_lexer(&mock, input, length);
   bool valid_symbols[TOKEN_COUNT] = {false};
   valid_symbols[HERE_END_BEGIN] = true;
-  bool result =
-    tree_sitter_dash_external_scanner_scan(scanner, &mock.lexer, valid_symbols);
+  bool result = test_state_scan(scanner, &mock.lexer, valid_symbols);
   if (result) {
     assert(mock.lexer.result_symbol == HERE_END_BEGIN);
     assert(mock.mark == 0);
@@ -3213,7 +3190,7 @@ static void assert_text_delimiter_fixture(
 }
 
 static void test_double_quoted_parameter_delimiters(void) {
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
   assert(scanner != NULL);
 
   const char *fixtures[][2] = {
@@ -3247,7 +3224,7 @@ static void test_double_quoted_parameter_delimiters(void) {
     );
   }
 
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(scanner);
 }
 
 static void test_parameter_delimiter_bytes_survive_state_restore(void) {
@@ -3273,7 +3250,7 @@ static void test_parameter_delimiter_bytes_survive_state_restore(void) {
     ));
     char serialized[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
     unsigned length = snapshot_scanner(&scanner, serialized);
-    tree_sitter_dash_external_scanner_deserialize(&scanner, serialized, length);
+    test_state_deserialize(&scanner, serialized, length);
     assert(scanner.pending_count == 1);
     assert_document_bytes(
       &scanner.pending_documents[0],
@@ -3286,7 +3263,7 @@ static void test_parameter_delimiter_bytes_survive_state_restore(void) {
 }
 
 static void test_double_quoted_substitution_delimiter_spelling(void) {
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
   assert(scanner != NULL);
   const char *fixtures[][2] = {
     {"\"$(printf 'ab')\"\n", "$(printf ab)"},
@@ -3311,11 +3288,11 @@ static void test_double_quoted_substitution_delimiter_spelling(void) {
       true
     );
   }
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(scanner);
 }
 
 static void test_arithmetic_delimiters_preserve_nested_quote_context(void) {
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
   assert(scanner != NULL);
   const struct {
     const char *source;
@@ -3346,11 +3323,11 @@ static void test_arithmetic_delimiters_preserve_nested_quote_context(void) {
       fixtures[index].quoted
     );
   }
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(scanner);
 }
 
 static void test_substitution_hash_delimiter_words(void) {
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
   assert(scanner != NULL);
 
   assert_text_delimiter_fixture(
@@ -3422,7 +3399,7 @@ static void test_substitution_hash_delimiter_words(void) {
     false
   );
 
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(scanner);
 }
 
 static void test_dollar_single_quote_escape_units(void) {
@@ -3459,7 +3436,7 @@ static void test_dollar_single_quote_escape_units(void) {
 
 static void
 test_dollar_single_quote_delimiter_bytes_survive_state_restore(void) {
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
   assert(scanner != NULL);
 
   const struct {
@@ -3502,7 +3479,7 @@ test_dollar_single_quote_delimiter_bytes_survive_state_restore(void) {
     char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
     unsigned state_length = snapshot_scanner(scanner, state);
     clear_scanner(scanner);
-    tree_sitter_dash_external_scanner_deserialize(scanner, state, state_length);
+    test_state_deserialize(scanner, state, state_length);
     assert(scanner->pending_count == 1);
     assert_document_bytes(
       &scanner->pending_documents[0],
@@ -3566,11 +3543,11 @@ test_dollar_single_quote_delimiter_bytes_survive_state_restore(void) {
   ));
   assert_document_bytes(&scanner->pending_documents[0], NULL, 0, true);
 
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(scanner);
 }
 
 static void test_delimiter_scan_resource_rollback(void) {
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
   assert(scanner != NULL);
 
   char before[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
@@ -3586,7 +3563,7 @@ static void test_delimiter_scan_resource_rollback(void) {
   assert(!scan_delimiter_fixture(scanner, input, length));
   assert_scanner_matches_snapshot(scanner, before, before_length);
   free(input);
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(scanner);
 }
 
 #ifdef TREE_SITTER_REUSE_ALLOCATOR
@@ -3614,11 +3591,7 @@ static void test_delimiter_allocation_failures_preserve_state(void) {
     if (failure > 0) {
       reuse_fail_allocation_call = calls + failure;
     }
-    bool accepted = tree_sitter_dash_external_scanner_scan(
-      &scanner,
-      &mock.lexer,
-      valid_symbols
-    );
+    bool accepted = test_state_scan(&scanner, &mock.lexer, valid_symbols);
     if (failure == 0) {
       allocation_count = reuse_allocation_calls - calls;
       assert(allocation_count > 0);
@@ -3695,7 +3668,7 @@ static void test_pending_activation_allocation_failures_preserve_state(void) {
 
 static void test_reuse_allocator_realloc_failure_rolls_back(void) {
   assert(reuse_live_allocations == 0);
-  struct Scanner *scanner = tree_sitter_dash_external_scanner_create();
+  struct Scanner *scanner = test_state_create();
   assert(scanner != NULL);
 
   char before[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
@@ -3710,7 +3683,7 @@ static void test_reuse_allocator_realloc_failure_rolls_back(void) {
   assert_scanner_matches_snapshot(scanner, before, before_length);
   assert(reuse_live_allocations == 1);
 
-  tree_sitter_dash_external_scanner_destroy(scanner);
+  test_state_destroy(scanner);
   assert(reuse_live_allocations == 0);
 }
 
@@ -3739,12 +3712,12 @@ static void assert_source_step(
   valid[symbol] = true;
   struct MockLexer lexer;
   init_mock_lexer(&lexer, input, length);
-  assert(tree_sitter_dash_external_scanner_scan(scanner, &lexer.lexer, valid));
+  assert(test_state_scan(scanner, &lexer.lexer, valid));
   assert(lexer.lexer.result_symbol == symbol);
   assert(lexer.mark == mark);
   char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
   unsigned state_length = snapshot_scanner(scanner, state);
-  tree_sitter_dash_external_scanner_deserialize(scanner, state, state_length);
+  test_state_deserialize(scanner, state, state_length);
   assert_scanner_matches_snapshot(scanner, state, state_length);
 }
 
@@ -3802,19 +3775,14 @@ test_separators_preserve_operator_identity_and_pending_documents(void) {
         unsigned before_length = snapshot_scanner(&scanner, before);
         struct MockLexer lexer;
         init_mock_lexer(&lexer, input, length);
-        bool accepted =
-          tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid);
+        bool accepted = test_state_scan(&scanner, &lexer.lexer, valid);
         assert(accepted == (recovery != 0 || cases[index].width == 1));
         if (accepted) {
           assert(lexer.lexer.result_symbol == cases[index].expected);
           assert(lexer.mark == 0);
           char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
           unsigned state_length = snapshot_scanner(&scanner, state);
-          tree_sitter_dash_external_scanner_deserialize(
-            &scanner,
-            state,
-            state_length
-          );
+          test_state_deserialize(&scanner, state, state_length);
           if (cases[index].width == 4) {
             assert_source_step(&scanner, input, length, cases[index].piece, 1);
             assert_source_step(
@@ -4046,9 +4014,7 @@ test_word_entry_classifies_and_owns_source_in_normal_and_recovery_scans(void) {
       valid[WORD_INITIAL_LITERAL_BEGIN_WHOLE] = true;
       struct MockLexer lexer;
       init_mock_lexer(&lexer, input, length);
-      assert(
-        tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-      );
+      assert(test_state_scan(&scanner, &lexer.lexer, valid));
       assert(lexer.lexer.result_symbol == fixtures[index].symbol);
       assert(lexer.mark == 0);
       assert(scanner.emission.active);
@@ -4056,21 +4022,13 @@ test_word_entry_classifies_and_owns_source_in_normal_and_recovery_scans(void) {
       assert(scanner.context_count == 0);
       char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
       unsigned state_length = snapshot_scanner(&scanner, state);
-      tree_sitter_dash_external_scanner_deserialize(
-        &scanner,
-        state,
-        state_length
-      );
+      test_state_deserialize(&scanner, state, state_length);
       assert_scanner_matches_snapshot(&scanner, state, state_length);
 
       bool disabled[TOKEN_COUNT] = {false};
       disabled[fixtures[index].symbol] = true;
       init_mock_lexer(&lexer, input, length);
-      assert(!tree_sitter_dash_external_scanner_scan(
-        &scanner,
-        &lexer.lexer,
-        disabled
-      ));
+      assert(!test_state_scan(&scanner, &lexer.lexer, disabled));
       assert_scanner_matches_snapshot(&scanner, state, state_length);
 
       bool recovery_literal =
@@ -4081,20 +4039,14 @@ test_word_entry_classifies_and_owns_source_in_normal_and_recovery_scans(void) {
                                             : fixtures[index].first_width;
       valid[piece] = true;
       init_mock_lexer(&lexer, input, length);
-      assert(
-        tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-      );
+      assert(test_state_scan(&scanner, &lexer.lexer, valid));
       assert(lexer.lexer.result_symbol == piece);
       assert(lexer.mark == first_width);
       assert(
         scanner.emission.remaining == fixtures[index].remaining - lexer.mark
       );
       state_length = snapshot_scanner(&scanner, state);
-      tree_sitter_dash_external_scanner_deserialize(
-        &scanner,
-        state,
-        state_length
-      );
+      test_state_deserialize(&scanner, state, state_length);
       assert_scanner_matches_snapshot(&scanner, state, state_length);
       clear_scanner(&scanner);
     }
@@ -4145,49 +4097,33 @@ test_whole_source_requires_its_classification_and_nonempty_range(void) {
     valid[fixtures[index].whole] = true;
     struct MockLexer lexer;
     init_mock_lexer(&lexer, source, length);
-    assert(
-      !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(!test_state_scan(&scanner, &lexer.lexer, valid));
     assert(!scanner.emission.active);
     valid[fixtures[index].begin] = true;
     init_mock_lexer(&lexer, source, 0);
-    assert(
-      !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(!test_state_scan(&scanner, &lexer.lexer, valid));
     init_mock_lexer(&lexer, source, length);
-    assert(
-      tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(test_state_scan(&scanner, &lexer.lexer, valid));
     assert(lexer.lexer.result_symbol == fixtures[index].begin);
     assert(lexer.mark == 0);
     assert(scanner.emission.symbol == fixtures[index].whole);
     assert(scanner.emission.remaining == fixtures[index].width);
     char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
     unsigned state_length = snapshot_scanner(&scanner, state);
-    tree_sitter_dash_external_scanner_deserialize(
-      &scanner,
-      state,
-      state_length
-    );
+    test_state_deserialize(&scanner, state, state_length);
     assert_scanner_matches_snapshot(&scanner, state, state_length);
 
     valid[fixtures[index].whole] = false;
     valid[fixtures[index].piece] = true;
     init_mock_lexer(&lexer, source, length);
-    assert(
-      !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(!test_state_scan(&scanner, &lexer.lexer, valid));
     assert_scanner_matches_snapshot(&scanner, state, state_length);
     valid[fixtures[index].whole] = true;
     init_mock_lexer(&lexer, source, fixtures[index].width - 1);
-    assert(
-      !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(!test_state_scan(&scanner, &lexer.lexer, valid));
     assert_scanner_matches_snapshot(&scanner, state, state_length);
     init_mock_lexer(&lexer, source, length);
-    assert(
-      tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(test_state_scan(&scanner, &lexer.lexer, valid));
     assert(lexer.lexer.result_symbol == fixtures[index].whole);
     assert(lexer.mark == fixtures[index].width);
     assert(!scanner.emission.active);
@@ -4219,9 +4155,7 @@ static void test_tilde_word_entry_uses_the_grammar_owned_lexical_context(void) {
     valid[WORD_TILDE_START] = fixtures[index].tilde;
     struct MockLexer lexer;
     init_mock_lexer(&lexer, source, ARRAY_LENGTH(source));
-    assert(
-      tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(test_state_scan(&scanner, &lexer.lexer, valid));
     assert(lexer.lexer.result_symbol == fixtures[index].symbol);
     assert(lexer.mark == 0);
     assert(scanner.emission.symbol == fixtures[index].emission);
@@ -4256,9 +4190,7 @@ static void test_pending_emission_rejects_disabled_and_stale_source(void) {
     valid[rejected[index].valid] = true;
     struct MockLexer lexer;
     init_mock_lexer(&lexer, rejected[index].input, rejected[index].length);
-    assert(
-      !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(!test_state_scan(&scanner, &lexer.lexer, valid));
     assert_scanner_matches_snapshot(&scanner, before, before_length);
   }
   assert_source_step(&scanner, source + 2, 3, REMOVED_NEWLINE, 1);
@@ -4324,18 +4256,14 @@ static void test_lexical_source_rejects_another_begin_after_restore(void) {
       valid[fixtures[index].other] = true;
       struct MockLexer lexer;
       init_mock_lexer(&lexer, source, length);
-      assert(
-        !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-      );
+      assert(!test_state_scan(&scanner, &lexer.lexer, valid));
       assert_scanner_matches_snapshot(&scanner, state, state_length);
       for (size_t token = 0; token < TOKEN_COUNT; token += 1) {
         valid[token] = recovery != 0;
       }
       valid[fixtures[index].piece] = true;
       init_mock_lexer(&lexer, source, length);
-      assert(
-        tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-      );
+      assert(test_state_scan(&scanner, &lexer.lexer, valid));
       assert(lexer.lexer.result_symbol == fixtures[index].piece);
       assert(lexer.mark == fixtures[index].width);
       assert(!scanner.emission.active);
@@ -4374,9 +4302,7 @@ static void test_physical_prefix_and_character_keep_the_same_begin(void) {
     valid[pieces[index].other] = true;
     struct MockLexer lexer;
     init_mock_lexer(&lexer, source + index, 3 - index);
-    assert(
-      !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(!test_state_scan(&scanner, &lexer.lexer, valid));
     assert_scanner_matches_snapshot(&scanner, state, state_length);
     assert_source_step(
       &scanner,
@@ -4406,11 +4332,7 @@ static void test_saved_source_requires_a_begin_token(void) {
     char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
     unsigned state_length = snapshot_scanner(&scanner, state);
     struct Scanner restored = {0};
-    tree_sitter_dash_external_scanner_deserialize(
-      &restored,
-      state,
-      state_length
-    );
+    test_state_deserialize(&restored, state, state_length);
     assert(!restored.emission.active);
     assert(restored.source.stage_count == 0);
     assert(restored.context_count == 0);
@@ -4490,9 +4412,7 @@ test_arithmetic_classification_restores_the_enclosing_context(void) {
         cases[index].source,
         ARRAY_LENGTH(cases[index].source)
       );
-      assert(
-        !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-      );
+      assert(!test_state_scan(&scanner, &lexer.lexer, valid));
       assert_scanner_matches_snapshot(&scanner, before, before_length);
 
       valid[cases[index].symbol] = true;
@@ -4501,14 +4421,12 @@ test_arithmetic_classification_restores_the_enclosing_context(void) {
         cases[index].source,
         ARRAY_LENGTH(cases[index].source)
       );
-      assert(
-        tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-      );
+      assert(test_state_scan(&scanner, &lexer.lexer, valid));
       assert(lexer.lexer.result_symbol == cases[index].symbol);
       assert(lexer.mark == 0);
       char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
       unsigned length = snapshot_scanner(&scanner, state);
-      tree_sitter_dash_external_scanner_deserialize(&scanner, state, length);
+      test_state_deserialize(&scanner, state, length);
       assert_scanner_matches_snapshot(&scanner, state, length);
       assert(scanner.context_count == 2);
       assert(top_context_opener(&scanner) == cases[index].symbol);
@@ -4557,7 +4475,7 @@ static void test_pending_backquote_tokens_round_trip_and_consume_once(void) {
 
     char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
     unsigned length = snapshot_scanner(&scanner, state);
-    tree_sitter_dash_external_scanner_deserialize(&scanner, state, length);
+    test_state_deserialize(&scanner, state, length);
     assert_scanner_matches_snapshot(&scanner, state, length);
     assert(scanner.contexts[0].backquote_token == cases[index].token);
     const int32_t body[] = {'x', ')', '\n'};
@@ -4565,15 +4483,12 @@ static void test_pending_backquote_tokens_round_trip_and_consume_once(void) {
     bool valid[TOKEN_COUNT] = {false};
     valid[COMMAND_SUBSTITUTION_BODY_BEGIN] = true;
     init_mock_lexer(&lexer, body, ARRAY_LENGTH(body));
-    assert(
-      !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(!test_state_scan(&scanner, &lexer.lexer, valid));
     assert_scanner_matches_snapshot(&scanner, state, length);
 
     valid[COMMAND_SUBSTITUTION_REMAINDER_END] = true;
     init_mock_lexer(&lexer, body, ARRAY_LENGTH(body));
-    bool accepted =
-      tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid);
+    bool accepted = test_state_scan(&scanner, &lexer.lexer, valid);
     assert(
       accepted == (cases[index].token == BACKQUOTE_TOKEN_RIGHT_PARENTHESIS)
     );
@@ -4585,9 +4500,7 @@ static void test_pending_backquote_tokens_round_trip_and_consume_once(void) {
       assert(scanner.contexts[0].backquote_token == BACKQUOTE_TOKEN_NONE);
       assert(source_context_push(&scanner, COMMAND_OPEN));
       init_mock_lexer(&lexer, body, ARRAY_LENGTH(body));
-      assert(
-        tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-      );
+      assert(test_state_scan(&scanner, &lexer.lexer, valid));
       assert(lexer.lexer.result_symbol == COMMAND_SUBSTITUTION_BODY_BEGIN);
       assert(scanner.substitution_depth == 1);
     } else {
@@ -4694,7 +4607,7 @@ static void test_retained_command_headers_restore_and_consume_once(void) {
 
       char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
       unsigned length = snapshot_scanner(&scanner, state);
-      tree_sitter_dash_external_scanner_deserialize(&scanner, state, length);
+      test_state_deserialize(&scanner, state, length);
       assert_scanner_matches_snapshot(&scanner, state, length);
       bool valid[TOKEN_COUNT] = {false};
       valid[WORD_INITIAL_LITERAL_BEGIN] = true;
@@ -4714,7 +4627,7 @@ static void test_retained_command_headers_restore_and_consume_once(void) {
       );
       assert(scanner.contexts[0].backquote_token == BACKQUOTE_TOKEN_NONE);
       length = snapshot_scanner(&scanner, state);
-      tree_sitter_dash_external_scanner_deserialize(&scanner, state, length);
+      test_state_deserialize(&scanner, state, length);
       assert_scanner_matches_snapshot(&scanner, state, length);
       assert(source_context_pop(&scanner));
       assert(source_context_pop(&scanner));
@@ -4740,7 +4653,7 @@ test_invalid_retained_token_rejects_recovery_without_consumption(void) {
 
     char state[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
     unsigned length = snapshot_scanner(&scanner, state);
-    tree_sitter_dash_external_scanner_deserialize(&scanner, state, length);
+    test_state_deserialize(&scanner, state, length);
     assert_scanner_matches_snapshot(&scanner, state, length);
     for (unsigned recovery = 0; recovery < 2; recovery += 1) {
       bool valid[TOKEN_COUNT];
@@ -4815,9 +4728,7 @@ static void test_source_context_growth_at_capacity_preserves_state(void) {
   valid[BACKQUOTE_START_CHARACTER] = true;
   struct MockLexer lexer;
   init_mock_lexer(&lexer, source, 2);
-  assert(
-    !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-  );
+  assert(!test_state_scan(&scanner, &lexer.lexer, valid));
   assert_scanner_matches_snapshot(&scanner, before, length);
   clear_scanner(&scanner);
 }
@@ -4886,23 +4797,15 @@ static void test_source_callback_allocation_failures_are_transactional(void) {
     struct MockLexer lexer;
     init_mock_lexer(&lexer, source + offsets[phase], 6 - offsets[phase]);
     size_t first_allocation = reuse_allocation_calls;
-    assert(
-      tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(test_state_scan(&scanner, &lexer.lexer, valid));
     size_t allocation_count = reuse_allocation_calls - first_allocation;
     assert(allocation_count > 0);
     clear_scanner(&scanner);
     for (size_t failure = 1; failure <= allocation_count; failure += 1) {
-      tree_sitter_dash_external_scanner_deserialize(
-        &scanner,
-        before,
-        before_length
-      );
+      test_state_deserialize(&scanner, before, before_length);
       reuse_fail_allocation_call = reuse_allocation_calls + failure;
       init_mock_lexer(&lexer, source + offsets[phase], 6 - offsets[phase]);
-      assert(
-        !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-      );
+      assert(!test_state_scan(&scanner, &lexer.lexer, valid));
       reuse_fail_allocation_call = 0;
       assert_scanner_matches_snapshot(&scanner, before, before_length);
       clear_scanner(&scanner);
@@ -4926,8 +4829,7 @@ test_reserved_word_allocation_failures_do_not_fall_back_to_word(void) {
     init_mock_lexer(&lexer, source, 3);
     size_t calls = reuse_allocation_calls;
     if (failure > 0) reuse_fail_allocation_call = calls + failure;
-    bool accepted =
-      tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid);
+    bool accepted = test_state_scan(&scanner, &lexer.lexer, valid);
     reuse_fail_allocation_call = 0;
     if (failure == 0) {
       allocation_count = reuse_allocation_calls - calls;
@@ -4957,7 +4859,7 @@ static void test_comment_boundary_allocation_failures_terminate(void) {
   struct MockLexer lexer;
   init_mock_lexer(&lexer, source, ARRAY_LENGTH(source));
   size_t first_allocation = reuse_allocation_calls;
-  assert(tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid));
+  assert(test_state_scan(&scanner, &lexer.lexer, valid));
   size_t allocation_count = reuse_allocation_calls - first_allocation;
   assert(allocation_count > 0);
   assert(lexer.lexer.result_symbol == TRAILING_COMMENT_BOUNDARY);
@@ -4965,16 +4867,10 @@ static void test_comment_boundary_allocation_failures_terminate(void) {
   clear_scanner(&scanner);
   assert(reuse_live_allocations == 0);
   for (size_t failure = 1; failure <= allocation_count; failure += 1) {
-    tree_sitter_dash_external_scanner_deserialize(
-      &scanner,
-      before,
-      before_length
-    );
+    test_state_deserialize(&scanner, before, before_length);
     init_mock_lexer(&lexer, source, ARRAY_LENGTH(source));
     reuse_fail_allocation_call = reuse_allocation_calls + failure;
-    assert(
-      !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(!test_state_scan(&scanner, &lexer.lexer, valid));
     assert(reuse_allocation_calls >= reuse_fail_allocation_call);
     reuse_fail_allocation_call = 0;
     assert_scanner_matches_snapshot(&scanner, before, before_length);
@@ -5003,7 +4899,7 @@ test_document_boundary_allocation_failures_do_not_close_the_term(void) {
   struct MockLexer lexer;
   init_mock_lexer(&lexer, source, ARRAY_LENGTH(source));
   size_t first_allocation = reuse_allocation_calls;
-  assert(tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid));
+  assert(test_state_scan(&scanner, &lexer.lexer, valid));
   size_t allocation_count = reuse_allocation_calls - first_allocation;
   assert(allocation_count > 0);
   assert(lexer.lexer.result_symbol == TERM_CONTINUATION);
@@ -5011,16 +4907,10 @@ test_document_boundary_allocation_failures_do_not_close_the_term(void) {
   assert_scanner_matches_snapshot(&scanner, before, before_length);
   clear_scanner(&scanner);
   for (size_t failure = 1; failure <= allocation_count; failure += 1) {
-    tree_sitter_dash_external_scanner_deserialize(
-      &scanner,
-      before,
-      before_length
-    );
+    test_state_deserialize(&scanner, before, before_length);
     reuse_fail_allocation_call = reuse_allocation_calls + failure;
     init_mock_lexer(&lexer, source, ARRAY_LENGTH(source));
-    assert(
-      !tree_sitter_dash_external_scanner_scan(&scanner, &lexer.lexer, valid)
-    );
+    assert(!test_state_scan(&scanner, &lexer.lexer, valid));
     assert(reuse_allocation_calls >= reuse_fail_allocation_call);
     reuse_fail_allocation_call = 0;
     assert_scanner_matches_snapshot(&scanner, before, before_length);
@@ -5030,7 +4920,90 @@ test_document_boundary_allocation_failures_do_not_close_the_term(void) {
 }
 #endif
 
+#ifdef TREE_SITTER_REUSE_ALLOCATOR
+static void test_payload_cache_commits_only_after_success(void) {
+  const int32_t source[] = {'f', 'o', '\\', '\n', 'o', ' '};
+  const enum TokenType symbols[] = {
+    WORD_INITIAL_LITERAL_BEGIN,
+    WORD_INITIAL_LITERAL_BEGIN_PIECE,
+    LINE_CONTINUATION,
+    REMOVED_NEWLINE,
+  };
+  const size_t offsets[] = {0, 0, 2, 3};
+  for (size_t phase = 0; phase < ARRAY_LENGTH(symbols); phase++) {
+    struct ScannerPayload *seed = tree_sitter_dash_external_scanner_create();
+    assert(seed != NULL);
+    for (size_t step = 0; step < phase; step++) {
+      bool valid[TOKEN_COUNT] = {false};
+      valid[symbols[step]] = true;
+      struct MockLexer lexer;
+      init_mock_lexer(&lexer, source + offsets[step], 6 - offsets[step]);
+      assert(tree_sitter_dash_external_scanner_scan(seed, &lexer.lexer, valid));
+    }
+    char before[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+    unsigned length = tree_sitter_dash_external_scanner_serialize(seed, before);
+    tree_sitter_dash_external_scanner_destroy(seed);
+    size_t allocations = 0;
+    for (size_t failure = 0; failure <= allocations; failure++) {
+      struct ScannerPayload *payload =
+        tree_sitter_dash_external_scanner_create();
+      assert(payload != NULL);
+      tree_sitter_dash_external_scanner_deserialize(payload, before, length);
+      struct ScannerPayload original;
+      memcpy(&original, payload, sizeof(original));
+      bool valid[TOKEN_COUNT] = {false};
+      valid[symbols[phase]] = true;
+      struct MockLexer lexer;
+      init_mock_lexer(&lexer, source + offsets[phase], 6 - offsets[phase]);
+      size_t start = reuse_allocation_calls;
+      if (failure > 0) reuse_fail_allocation_call = start + failure;
+      bool result =
+        tree_sitter_dash_external_scanner_scan(payload, &lexer.lexer, valid);
+      reuse_fail_allocation_call = 0;
+      if (failure == 0) {
+        assert(result);
+        assert(lexer.lexer.result_symbol == symbols[phase]);
+        allocations = reuse_allocation_calls - start;
+      } else {
+        assert(!result);
+        assert(memcmp(payload, &original, sizeof(original)) == 0);
+      }
+      char cached[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+      char canonical[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+      unsigned cached_length =
+        tree_sitter_dash_external_scanner_serialize(payload, cached);
+      unsigned canonical_length = scanner_serialize(&payload->state, canonical);
+      assert(cached_length == canonical_length);
+      assert(memcmp(cached, canonical, cached_length) == 0);
+      tree_sitter_dash_external_scanner_deserialize(
+        payload,
+        cached,
+        cached_length
+      );
+      assert(
+        tree_sitter_dash_external_scanner_serialize(payload, canonical) ==
+        cached_length
+      );
+      assert(memcmp(cached, canonical, cached_length) == 0);
+      tree_sitter_dash_external_scanner_deserialize(payload, NULL, 0);
+      assert(payload->state.context_count == 0);
+      cached_length =
+        tree_sitter_dash_external_scanner_serialize(payload, cached);
+      assert(
+        cached_length == scanner_serialize(&(struct Scanner){0}, canonical)
+      );
+      assert(memcmp(cached, canonical, cached_length) == 0);
+      tree_sitter_dash_external_scanner_destroy(payload);
+      assert(reuse_live_allocations == 0);
+    }
+  }
+}
+#endif
+
 int main(void) {
+#ifdef TREE_SITTER_REUSE_ALLOCATOR
+  test_payload_cache_commits_only_after_success();
+#endif
   test_source_reading_omits_nul_and_preserves_scalar_origins();
   test_ancestor_removal_survives_local_quoting();
   test_disabled_here_document_stage_only_tracks_line_starts();

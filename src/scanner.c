@@ -883,21 +883,17 @@ static bool lookahead_local_disabled(TSLexer *lexer) {
     input->cursor.initial[input->cursor.stage_count - 1].disabled;
 }
 
-static bool advance_to_comment_end(TSLexer *lexer, struct ByteBuffer *source) {
+static bool advance_to_comment_end(TSLexer *lexer) {
   bool disabled = lookahead_local_disabled(lexer);
-  if (lexer->lookahead != '#' || !advance_source(lexer, source)) {
+  if (lexer->lookahead != '#') {
     return false;
   }
+  lexer->advance(lexer, false);
   if (!lookahead_local_policy(lexer, true)) {
     return false;
   }
-  while (!lexer_at_eof(lexer) && lexer->lookahead != '\n') {
-    if (lexer->lookahead == SOURCE_BACKQUOTE_BOUNDARY) {
-      break;
-    }
-    if (!advance_source(lexer, source)) {
-      return false;
-    }
+  while (!lexer_at_input_end(lexer) && lexer->lookahead != '\n') {
+    lexer->advance(lexer, false);
   }
   return lookahead_local_policy(lexer, disabled);
 }
@@ -3840,7 +3836,7 @@ static bool scan_comment_term_boundary(
   ) {
     return classify_comment_boundary(lexer, valid_symbols);
   }
-  advance_to_comment_end(lexer, NULL);
+  advance_to_comment_end(lexer);
   bool reaches_end = lexer_at_input_end(lexer);
   if (!reaches_end) {
     enum TermContinuation continuation =
@@ -3964,7 +3960,7 @@ static enum TermContinuation finish_term_continuation(
   while (true) {
     scan_horizontal_blanks(lexer);
     if (lexer->lookahead == '#') {
-      advance_to_comment_end(lexer, NULL);
+      advance_to_comment_end(lexer);
       continue;
     }
     if (lexer->lookahead == '\n') {
@@ -4081,7 +4077,7 @@ classify_comment_boundary(TSLexer *lexer, const bool *valid_symbols) {
   }
   bool comment_reaches_input_end = false;
   if (valid_symbols[TRAILING_COMMENT_BOUNDARY]) {
-    advance_to_comment_end(lexer, NULL);
+    advance_to_comment_end(lexer);
     comment_reaches_input_end = lexer_at_input_end(lexer);
   }
   return classify_scanned_comment_boundary(
@@ -4248,7 +4244,6 @@ enum ValidationTokenKind {
 enum {
   VALIDATION_OPERATOR_BANG = ARITHMETIC_OPERATOR_CATEGORY_COUNT,
   VALIDATION_OPERATOR_TILDE,
-  VALIDATION_OPERATOR_REPEATED_SIGN,
 };
 
 static bool append_validation_token(
@@ -4744,7 +4739,7 @@ static void embedded_step(
     return;
   }
   if (character == '#' && in_command && !frame->command.word.active) {
-    if (!advance_to_comment_end(lexer, NULL)) {
+    if (!advance_to_comment_end(lexer)) {
       walk->result = ARITHMETIC_VALIDATION_RESOURCE_FAILURE;
     }
     return;
@@ -4951,8 +4946,7 @@ static bool validate_operator_source(
   uint8_t category = classified != ARITHMETIC_OPERATOR_CATEGORY_COUNT
     ? (uint8_t)classified
     : first == '~' ? VALIDATION_OPERATOR_TILDE
-    : first == '!' ? VALIDATION_OPERATOR_BANG
-                   : VALIDATION_OPERATOR_REPEATED_SIGN;
+                   : VALIDATION_OPERATOR_BANG;
   for (; length > 1; length -= 1) {
     lexer->advance(lexer, false);
   }
@@ -5141,18 +5135,6 @@ struct StructuredValidation {
   size_t count;
 };
 
-static bool validation_token_is_operator(
-  const struct StructuredValidation *validation,
-  size_t index,
-  uint8_t category
-) {
-  return (
-    index < validation->count &&
-    validation->tokens[index].kind == VALIDATION_TOKEN_OPERATOR &&
-    validation->tokens[index].category == category
-  );
-}
-
 enum StructuredContext {
   STRUCTURED_CONTEXT_GROUP,
   STRUCTURED_CONTEXT_TERNARY,
@@ -5187,11 +5169,10 @@ static size_t structured_assignment_head_end(
   }
   if (
     opens > 0 ||
-    !validation_token_is_operator(
-      validation,
-      index,
+    index >= validation->count ||
+    validation->tokens[index].kind != VALIDATION_TOKEN_OPERATOR ||
+    validation->tokens[index].category !=
       ARITHMETIC_OPERATOR_CATEGORY_ASSIGNMENT
-    )
   ) {
     return SIZE_MAX;
   }
@@ -5597,20 +5578,6 @@ static bool scan_here_document_sequence_end(
   finish_term_continuation(scanner, lexer, valid_symbols);
   lexer->result_symbol = HERE_DOCUMENT_SEQUENCE_END;
   return true;
-}
-
-void *tree_sitter_dash_external_scanner_create(void) {
-  return ts_calloc(1, sizeof(struct Scanner));
-}
-
-void tree_sitter_dash_external_scanner_destroy(void *payload) {
-  struct Scanner *scanner = payload;
-  if (scanner == NULL) {
-    return;
-  }
-
-  clear_scanner(scanner);
-  ts_free(scanner);
 }
 
 enum ScannerFlag {
@@ -6217,9 +6184,7 @@ static bool deserialize_scanner_state(
   return true;
 }
 
-unsigned
-tree_sitter_dash_external_scanner_serialize(void *payload, char *buffer) {
-  const struct Scanner *scanner = payload;
+static unsigned scanner_serialize(const struct Scanner *scanner, char *buffer) {
   if (scanner == NULL) {
     return 0;
   }
@@ -6236,37 +6201,13 @@ tree_sitter_dash_external_scanner_serialize(void *payload, char *buffer) {
   return (unsigned)writer.length + 1;
 }
 
-void tree_sitter_dash_external_scanner_deserialize(
-  void *payload,
-  const char *buffer,
-  unsigned length
-) {
-  struct Scanner *scanner = payload;
-  if (scanner == NULL) {
-    return;
-  }
-
-  clear_scanner(scanner);
-  if (
-    length < 1 ||
-    length > TREE_SITTER_SERIALIZATION_BUFFER_SIZE ||
-    (uint8_t)buffer[0] != SCANNER_SERIALIZATION_VERSION
-  ) {
-    return;
-  }
-
-  if (!deserialize_scanner_state(scanner, buffer + 1, length - 1)) {
-    clear_scanner(scanner);
-  }
-}
-
 static bool scan_here_document_sequence_begin(TSLexer *lexer) {
   struct LookaheadLexer *lookahead = (struct LookaheadLexer *)lexer;
   size_t position = lookahead->position;
   lexer->mark_end(lexer);
   scan_horizontal_blanks(lexer);
   if (lexer->lookahead == '#') {
-    advance_to_comment_end(lexer, NULL);
+    advance_to_comment_end(lexer);
   }
   if (lexer->lookahead == '\n' || lexer_at_eof(lexer)) {
     lexer->result_symbol = HERE_DOCUMENT_SEQUENCE_BEGIN;
@@ -6966,19 +6907,18 @@ static bool scanner_source_ready(struct Scanner *scanner) {
   return true;
 }
 
-static struct SourceStage *
-grow_source_stages(struct Scanner *scanner, size_t added) {
+static struct SourceStage *grow_source_stages(struct Scanner *scanner) {
   size_t count = scanner->source.stage_count;
-  if (count > SIZE_MAX / sizeof(struct SourceStage) - added) {
+  if (count > SIZE_MAX / sizeof(struct SourceStage) - 2) {
     return NULL;
   }
   struct SourceStage *stages =
-    ts_realloc(scanner->source.stages, (count + added) * sizeof(*stages));
+    ts_realloc(scanner->source.stages, (count + 2) * sizeof(*stages));
   if (stages == NULL) {
     return NULL;
   }
   scanner->source.stages = stages;
-  scanner->source.stage_count += added;
+  scanner->source.stage_count = count + 2;
   return stages + count - 1;
 }
 
@@ -7025,7 +6965,7 @@ source_context_push(struct Scanner *scanner, enum TokenType opener) {
     };
   }
   if (is_backquote_context(opener)) {
-    struct SourceStage *stages = grow_source_stages(scanner, 2);
+    struct SourceStage *stages = grow_source_stages(scanner);
     if (stages == NULL) {
       return false;
     }
@@ -7035,7 +6975,7 @@ source_context_push(struct Scanner *scanner, enum TokenType opener) {
     if (scanner->active_frame.count == 0) {
       return false;
     }
-    struct SourceStage *stages = grow_source_stages(scanner, 2);
+    struct SourceStage *stages = grow_source_stages(scanner);
     if (stages == NULL) {
       return false;
     }
@@ -7283,13 +7223,10 @@ static bool emission_checkpoint(
   return true;
 }
 
-static bool
-removal_has_slash(const struct SourceCursor *cursor, int64_t slash) {
+static bool removal_has_initial_slash(const struct SourceCursor *cursor) {
   for (size_t index = 0; index < cursor->removal_count; index += 1) {
     const struct SourceRemoval *removal = &cursor->removals[index];
-    if (
-      removal->kind == SOURCE_REMOVED_CONTINUATION && removal->slash == slash
-    ) {
+    if (removal->kind == SOURCE_REMOVED_CONTINUATION && removal->slash == 0) {
       return true;
     }
   }
@@ -7401,7 +7338,7 @@ static struct EmissionStep emit_backslash(
   if (step.accepted && lexer->lookahead == '\n') {
     step.accepted = source_feed(cursor, '\n');
     lexer->advance(lexer, false);
-    if (step.accepted && removal_has_slash(cursor, 0)) {
+    if (step.accepted && removal_has_initial_slash(cursor)) {
       step.symbol = LINE_CONTINUATION;
       *removed_newline = true;
     }
@@ -7935,16 +7872,8 @@ static bool lexical_classify(struct LogicalLexer *input, const bool *valid) {
     lexer->result_symbol = LOGICAL_BLANK_BEGIN;
     return true;
   }
-  if (
-    valid[ARITHMETIC_BLANK_BEGIN] &&
-    lexer->lookahead != '\n' &&
-    arithmetic_whitespace(lexer->lookahead)
-  ) {
-    do {
-      lexer->advance(lexer, false);
-    } while (
-      lexer->lookahead != '\n' && arithmetic_whitespace(lexer->lookahead)
-    );
+  if (valid[ARITHMETIC_BLANK_BEGIN] && is_horizontal_blank(lexer->lookahead)) {
+    scan_horizontal_blanks(lexer);
     return emit_symbol(lexer, ARITHMETIC_BLANK_BEGIN);
   }
   if (lexer->lookahead == '#' && valid[PARAMETER_LENGTH_OPERATOR_BEGIN]) {
@@ -8435,7 +8364,7 @@ static bool classify_logical_source(
     }
   }
   if (valid[COMMENT_START] && input->lexer.lookahead == '#') {
-    if (!advance_to_comment_end(&input->lexer, NULL)) {
+    if (!advance_to_comment_end(&input->lexer)) {
       return false;
     }
     return emit_symbol(&input->lexer, COMMENT_START);
@@ -9014,14 +8943,65 @@ static bool scan_source(
   return accepted;
 }
 
+struct ScannerPayload {
+  struct Scanner state;
+  char bytes[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+  unsigned length;
+};
+
+void *tree_sitter_dash_external_scanner_create(void) {
+  struct ScannerPayload *payload = ts_calloc(1, sizeof(*payload));
+  if (payload != NULL) {
+    payload->length = scanner_serialize(&payload->state, payload->bytes);
+  }
+  return payload;
+}
+
+void tree_sitter_dash_external_scanner_destroy(void *opaque) {
+  struct ScannerPayload *payload = opaque;
+  if (payload != NULL) {
+    clear_scanner(&payload->state);
+    ts_free(payload);
+  }
+}
+
+unsigned
+tree_sitter_dash_external_scanner_serialize(void *opaque, char *buffer) {
+  const struct ScannerPayload *payload = opaque;
+  if (payload == NULL) return 0;
+  memcpy(buffer, payload->bytes, payload->length);
+  return payload->length;
+}
+
+void tree_sitter_dash_external_scanner_deserialize(
+  void *opaque,
+  const char *buffer,
+  unsigned length
+) {
+  struct ScannerPayload *payload = opaque;
+  if (payload == NULL) return;
+  clear_scanner(&payload->state);
+  if (
+    length >= 1 &&
+    length <= TREE_SITTER_SERIALIZATION_BUFFER_SIZE &&
+    (uint8_t)buffer[0] == SCANNER_SERIALIZATION_VERSION &&
+    deserialize_scanner_state(&payload->state, buffer + 1, length - 1)
+  ) {
+    memcpy(payload->bytes, buffer, length);
+    payload->length = length;
+  } else {
+    clear_scanner(&payload->state);
+    payload->length = scanner_serialize(&payload->state, payload->bytes);
+  }
+}
+
 bool tree_sitter_dash_external_scanner_scan(
-  void *payload,
+  void *opaque,
   TSLexer *lexer,
   const bool *valid_symbols
 ) {
-  if (payload == NULL) {
-    return false;
-  }
+  struct ScannerPayload *payload = opaque;
+  if (payload == NULL) return false;
   bool recovering = true;
   for (size_t index = 0; index < TOKEN_COUNT; index += 1) {
     if (!valid_symbols[index]) {
@@ -9031,23 +9011,32 @@ bool tree_sitter_dash_external_scanner_scan(
   }
   bool contextual_symbols[TOKEN_COUNT];
   if (recovering) {
-    select_recovery_symbols(payload, contextual_symbols);
+    select_recovery_symbols(&payload->state, contextual_symbols);
     valid_symbols = contextual_symbols;
   }
-  struct Scanner next;
-  if (!scanner_copy(payload, &next)) {
+  struct Scanner next = {0};
+  if (!deserialize_scanner_state(
+        &next,
+        payload->bytes + 1,
+        payload->length - 1
+      )) {
+    clear_scanner(&next);
     return false;
   }
+  char bytes[TREE_SITTER_SERIALIZATION_BUFFER_SIZE];
+  unsigned length;
   if (
-    !scan_source(&next, payload, lexer, valid_symbols, recovering) ||
+    !scan_source(&next, &payload->state, lexer, valid_symbols, recovering) ||
     lexer->result_symbol >= TOKEN_COUNT ||
     !valid_symbols[lexer->result_symbol] ||
-    !scanner_state_fits(&next)
+    (length = scanner_serialize(&next, bytes)) == 0
   ) {
     clear_scanner(&next);
     return false;
   }
-  clear_scanner(payload);
-  *(struct Scanner *)payload = next;
+  clear_scanner(&payload->state);
+  payload->state = next;
+  memcpy(payload->bytes, bytes, length);
+  payload->length = length;
   return true;
 }

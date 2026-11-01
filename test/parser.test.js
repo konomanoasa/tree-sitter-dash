@@ -289,6 +289,27 @@ test("arithmetic boundaries are independent of evaluation success and surroundin
   }
 });
 
+test("arithmetic layout is limited to blanks and newlines", () => {
+  for (const [separator, structured] of [
+    [" ", true],
+    ["\t", true],
+    ["\n", true],
+    ["\v", false],
+    ["\f", false],
+    ["\r", false],
+  ]) {
+    const source = `: $((1${separator}+${separator}1${separator}))\n`;
+    const output = parseValidCst(writeSource("arithmetic-layout", source));
+    if (structured) {
+      assert.match(output, /arithmetic_binary_expression/);
+      assert.doesNotMatch(output, /arithmetic_source/);
+    } else {
+      assert.match(output, /arithmetic_source_fragment/);
+      assert.doesNotMatch(output, /arithmetic_binary_expression/);
+    }
+  }
+});
+
 test("static declaration names retain assignment arguments through quotes, options and redirects", () => {
   for (const name of [
     "export",
