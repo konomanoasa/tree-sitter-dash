@@ -21,6 +21,7 @@ BreakBeforeCloseBracketIf: true
 BreakBeforeCloseBracketLoop: true
 BreakStringLiterals: false
 ContinuationIndentWidth: 2
+FixNamespaceComments: false
 IndentCaseLabels: true
 LineEnding: LF
 ReflowComments: IndentOnly

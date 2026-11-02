@@ -5,9 +5,19 @@
   "license": "MIT",
   "repository": "git+https://github.com/konomanoasa/tree-sitter-dash.git",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./bindings/node/index.d.ts",
+      "default": "./bindings/node/index.js"
+    }
+  },
   "files": [
     "Cargo.toml",
     "PARSING_POLICY.md",
+    "binding.gyp",
+    "bindings/node/*.cc",
+    "bindings/node/*.js",
+    "bindings/node/*.ts",
     "bindings/python/*",
     "bindings/rust/*.rs",
     "grammar.js",
@@ -25,24 +35,34 @@
     "access": "public"
   },
   "scripts": {
-    "build": "npm run tree-sitter -- build-all",
+    "build": "node-gyp rebuild && node-gyp configure -- -f compile_commands_json && npm run tree-sitter -- build-all",
     "check": "biome check . && tsc",
     "check:queries": "npm run tree-sitter -- check-queries",
     "format": "biome format --write .",
     "generate": "npm run tree-sitter -- generate-all",
-    "test": "npm run tree-sitter -- test-corpus --rebuild && node --test --test-concurrency=1 test/build.test.js test/cst.test.js test/highlight.test.js test/incremental.test.js test/parser.test.js test/recovery.test.js && node scripts/check-c.js --test",
+    "install": "node-gyp-build",
+    "test": "npm run tree-sitter -- test-corpus --rebuild && node --test --test-concurrency=1 test/bindings.test.js test/build.test.js test/cst.test.js test/highlight.test.js test/incremental.test.js test/parser.test.js test/recovery.test.js && node scripts/check-c.js --test",
     "test:fuzz": "npm run tree-sitter -- fuzz-all --iterations 100 --edits 5",
     "test:performance": "node --test test/performance.test.js",
     "test:sanitize": "node scripts/check-c.js --sanitize",
     "tree-sitter": "node scripts/tree-sitter.js"
   },
+  "dependencies": {
+    "node-addon-api": "8.9.2",
+    "node-gyp-build": "4.8.4"
+  },
+  "peerDependencies": {
+    "tree-sitter": "0.25.1"
+  },
   "devDependencies": {
-    "@biomejs/biome": "2.6.2",
-    "@types/node": "26.6.5",
+    "@biomejs/biome": "2.6.4",
+    "@types/node": "26.6.6",
+    "node-gyp": "13.1.0",
     "tree-sitter-cli": "0.27.1",
     "typescript": "7.0.2"
   },
   "allowScripts": {
+    "tree-sitter": true,
     "tree-sitter-cli": true
   }
 }

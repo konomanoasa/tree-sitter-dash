@@ -215,27 +215,99 @@ test("edits across a static command and function boundary agree with fresh parsi
   }
 });
 
-test("colon-brace parameter forms require recovery across enclosing contexts and source views", () => {
+test("colon-brace operators retain their source across enclosing contexts and source views", () => {
+  for (const [expansion, operator] of [
+    ...[
+      "a",
+      "_name2",
+      "1",
+      "01",
+      "10",
+      "00",
+      "0",
+      "?",
+      "-",
+      "!",
+      "*",
+      "@",
+      "$",
+    ].map((parameter) => [`\${${parameter}:}}`, ":}"]),
+    [`\${a:}word}`, ":}"],
+    [`\${a:}\${b:-x}}`, ":}"],
+    [`\${a:}$(printf x)}`, ":}"],
+    [`\${a:}$((1+2))}`, ":}"],
+    [`\${a:})}`, ":}"],
+    [`\${a:}"}"}`, ":}"],
+    [`\${a:}\\}}`, ":}"],
+    [`\${a:}}tail`, ":}"],
+    [`\${a:}}$(printf tail)`, ":}"],
+    [`\${a:\\\n}}`, ":\\\n}"],
+    [`\${a:\0}}`, ":\0}"],
+    [`\${a:\\\0\n}}`, ":\\\0\n}"],
+  ]) {
+    for (const source of [
+      `: ${expansion}\n`,
+      `: "${expansion}"\n`,
+      `v=${expansion}\n`,
+      `: \${outer:-${expansion}}\n`,
+      `cat <<E\n${expansion}\nE\n`,
+      `: $(printf '%s' ${expansion})\n`,
+      `: \`printf '%s' ${expansion}\`\n`,
+      `: $((${expansion}))\n`,
+      `: $((@ ${expansion}))\n`,
+    ]) {
+      const nodes = sourceNodes(
+        parseValidCst(writeSource("colon-brace-parameter", source)),
+        source,
+      );
+      const expansionStart = source.indexOf(expansion);
+      const expansionText = expansion.slice(0, expansion.lastIndexOf("}") + 1);
+      assert.deepEqual(
+        nodes
+          .filter(
+            ({ type, start }) =>
+              type === "parameter_expansion" && start === expansionStart,
+          )
+          .map(({ end, text }) => [end, text]),
+        [[expansionStart + expansionText.length, expansionText]],
+        source,
+      );
+      const start = expansionStart + expansion.indexOf(":");
+      assert.deepEqual(
+        nodes
+          .filter(
+            ({ type, start: position }) =>
+              type === "parameter_value_operator" && position === start,
+          )
+          .map(({ field, start: position, end, text }) => [
+            field,
+            position,
+            end,
+            text,
+          ]),
+        [["operator", start, start + operator.length, operator]],
+        source,
+      );
+    }
+  }
+});
+
+test("incomplete and invalid colon-brace parameters require recovery across contexts", () => {
   for (const expansion of [
     `\${a:}`,
-    `\${a:}}`,
-    `\${a:}word}`,
-    `\${1:}}`,
-    `\${?:}}`,
+    `\${a:}word`,
     `\${#:}}`,
     `\${#:}word}`,
-    `\${a:}\${b:-x}}`,
-    `\${a:}$(printf x)}`,
-    `\${a:})}`,
-    `\${a:}"}"}`,
-    `\${a:}\\}}`,
-    `\${a:}}tail`,
-    `\${a:}}$(printf tail)`,
-    `\${a:\\\n}}`,
-    `\${a:\0}}`,
-    `\${a:\\\0\n}}`,
+    `\${#a:}}`,
+    `\${#1:}}`,
+    `\${:}}`,
     `\${#:\\\n}}`,
     `\${a:!}`,
+    `\${a: }x}`,
+    `\${a::}x}`,
+    `\${a:\\}x}`,
+    `\${a:}X}\${b`,
+    `\${a:}X}$(if)`,
   ]) {
     for (const source of [
       `: ${expansion}\n`,
@@ -257,6 +329,57 @@ test("colon-brace parameter forms require recovery across enclosing contexts and
         source,
       );
     }
+  }
+});
+
+test("colon-brace edits preserve boundaries and repair to the fresh CST", () => {
+  for (const [source, removed, inserted, mode] of [
+    [`: \${a:-word}tail\n`, ":-", ":}", "valid"],
+    [`: \${a:}word}tail\n`, ":}", ":-", "valid"],
+    [`: "\${a:}word}tail"\n`, ":}", ":+", "valid"],
+    [`: \${a:}word}tail\n`, ":}", ":\\\n}", "valid"],
+    [`: \${a:\0}word}tail\n`, "}word", "-word", "valid"],
+    [`: \${a:\\\0\n}word}tail\n`, "}word", "-word", "valid"],
+    [`: \${a:}word}tail\n`, "a", "01", "valid"],
+    [`: \${a:}word}tail\n`, "a", "#", "recovery"],
+    [`: \${a:}word}tail\n`, "a", "#a", "recovery"],
+    [`: \${a:}word}tail\n`, ":}", ":", "recovery"],
+    [`: \${a:}word}tail\n`, "word}", "word", "recovery"],
+    [`: \${a:}word}tail\n`, "word", `\${b:}x}`, "valid"],
+    [`: \${outer:-\${a:}word}tail}\n`, ":}word", ":-word", "valid"],
+    [`v=\${a:-word}\n`, ":-", ":}", "valid"],
+    [`: $((1+\${a:-2}))\n`, ":-", ":}", "valid"],
+    [`: $((@ \${a:})} ))\n`, ")}", "\\)}", "valid"],
+    [`: $(printf '%s' \${a:})})\n`, ":}", ":-", "valid"],
+    [`: \`printf '%s' \${a:})}\`\n`, ":}", ":-", "valid"],
+    [`cat <<E\n\${a:}word}tail\nE\n`, ":}", ":-", "valid"],
+    [`cat <<E\n\${a:}word}tail\nE\n`, ":}", ":", "recovery"],
+  ]) {
+    const byte = source.indexOf(removed);
+    assert.notEqual(byte, -1);
+    const edit = { byte, deleteBytes: removed.length, insert: inserted };
+    const repair = { byte, deleteBytes: inserted.length, insert: removed };
+    const initial = writeSource("colon-brace-edit", source);
+    const changed = writeSource(
+      "colon-brace-edited",
+      applyEdits(source, [edit]),
+    );
+    if (mode === "valid") {
+      assertIncrementalEqualsFresh(initial, changed, source, edit);
+    } else {
+      assert.equal(runParse({ source: changed, mode }).recovery, true, source);
+      assert.equal(
+        runParse({
+          source: initial,
+          edits: [edit],
+          expectedSource: changed,
+          mode,
+        }).recovery,
+        true,
+        source,
+      );
+    }
+    assertIncrementalEqualsFresh(initial, initial, source, edit, repair);
   }
 });
 
@@ -654,6 +777,84 @@ test("delimiter source uses quote removal without command or parameter validatio
         output,
         /command_substitution|arithmetic_expansion|parameter_expansion/,
       );
+    }
+  }
+});
+
+test("pending heredocs preserve hash suffixes across word boundary edits and EOF", () => {
+  const command = "cat <<EOF; echo ";
+  for (const part of [
+    "a",
+    '"$@"',
+    '""',
+    "'a'",
+    "$'a'",
+    `\${v}`,
+    "$((1))",
+    "$(printf a)",
+    "`printf a`",
+    "\\a",
+    "[a]",
+    "[a",
+    "*",
+  ]) {
+    for (const [name, ending, bodies, ends] of [
+      ["body", "\nBODY\nEOF\n", ["BODY\n"], ["EOF"]],
+      ["EOF", "", [], []],
+    ]) {
+      const prefix = command + part;
+      const gaps = ["", " ", "\\\n"];
+      const files = gaps.map((gap) => {
+        const source = `${prefix}${gap}# c${ending}`;
+        const file = writeSource("heredoc-hash-boundary", source);
+        const nodes = sourceNodes(parseValidCst(file), source);
+        const description = `${name}: ${JSON.stringify(part)} with ${JSON.stringify(gap)}`;
+        assert.deepEqual(
+          nodes
+            .filter(
+              ({ type, start }) => type === "word" && start === command.length,
+            )
+            .map(({ text }) => text),
+          [gap === " " ? part : `${part}${gap}#`],
+          description,
+        );
+        assert.deepEqual(
+          nodes
+            .filter(({ type }) => type === "comment")
+            .map(({ start, end, text }) => [start, end, text]),
+          gap === " " ? [[prefix.length + 1, prefix.length + 4, "# c"]] : [],
+          description,
+        );
+        for (const [type, expected] of [
+          ["here_document_body", bodies],
+          ["here_document_end_text", ends],
+        ]) {
+          assert.deepEqual(
+            nodes.filter((node) => node.type === type).map(({ text }) => text),
+            expected,
+            `${description}: ${type}`,
+          );
+        }
+        assert.equal(
+          nodes.filter(({ type }) => type === "here_document").length,
+          1,
+        );
+        return file;
+      });
+      for (let index = 1; index < gaps.length; index += 1) {
+        const gap = gaps[index];
+        const description = `${name}: ${JSON.stringify(part)} with ${JSON.stringify(gap)}`;
+        assertIncrementalEqualsFresh(files[0], files[index], description, {
+          byte: prefix.length,
+          deleteBytes: 0,
+          insert: gap,
+        });
+        assertIncrementalEqualsFresh(files[index], files[0], description, {
+          byte: prefix.length,
+          deleteBytes: gap.length,
+          insert: "",
+        });
+      }
     }
   }
 });

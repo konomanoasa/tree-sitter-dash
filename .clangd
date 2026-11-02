@@ -1,7 +1,5 @@
 CompileFlags:
   Add:
-    - -std=c17
-    - -xc
     - -Wall
     - -Wextra
     - -Werror
@@ -9,18 +7,18 @@ CompileFlags:
 
 ---
 If:
+  PathMatch: .*\.(c|h)
+CompileFlags:
+  Add:
+    - -std=c17
+    - -xc
+
+---
+If:
   PathMatch: .*\.h
 CompileFlags:
   Add:
     - -xc-header
-    - -Wno-unused-function
-
----
-If:
-  PathMatch: test/[^/]*\.c
-CompileFlags:
-  Add:
-    - -Wno-unused-function
 
 ---
 If:
@@ -31,7 +29,15 @@ CompileFlags:
 
 ---
 If:
-  PathMatch: bindings/python/.*\.c
+  PathMatch: src/(input|arithmetic)\.h
 CompileFlags:
   Add:
-    - -I../../src
+    - -Wno-unused-function
+
+---
+If:
+  PathMatch: bindings/node/.*\.cc
+CompileFlags:
+  CompilationDatabase: build/Release
+  Add:
+    - -std=c++17

@@ -13,6 +13,9 @@ jobs:
   parser:
     name: Test parsers (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    env:
+      CC: clang
+      CXX: clang++
     strategy:
       fail-fast: false
       matrix:
@@ -23,31 +26,24 @@ jobs:
         with:
           node-version: 24.21.0
       - uses: tree-sitter/setup-action/cli@v2
-      - name: Set up build and query tools
-        if: runner.os == 'macOS'
-        shell: sh
-        run: |
-          brew install llvm ts_query_ls
-          {
-            printf 'CC=%s/bin/clang\n' "$(brew --prefix llvm)"
-            printf 'CFLAGS=-std=c17 -isysroot %s\n' "$(xcrun --sdk macosx --show-sdk-path)"
-          } >>"$GITHUB_ENV"
-      - run: npm ci
       - uses: astral-sh/setup-uv@v9.0.0
         with:
           version: "0.13.6"
           python-version: "3.15"
-      - name: Set up Python environment
-        run: uv sync --locked --no-editable
-      - name: Test Python binding
-        run: uv run --no-sync poe test
-      - name: Test Python builds
-        run: npm exec --call "node --test test/python/build.test.js"
       - name: Set up Rust
         shell: bash
         run: |
           rustup toolchain install stable --profile minimal
           rustup default stable
+      - name: Set up build and query tools
+        if: runner.os == 'macOS'
+        shell: sh
+        run: |
+          brew install ts_query_ls
+          printf 'CFLAGS=-std=c17 -isysroot %s\n' "$(xcrun --sdk macosx --show-sdk-path)" >>"$GITHUB_ENV"
+      - run: npm ci
+      - name: Set up Python environment
+        run: uv sync --locked --no-editable
       - name: Fetch Rust dependencies
         run: cargo fetch --locked
       - uses: tree-sitter/parser-test-action@v3
@@ -56,6 +52,12 @@ jobs:
           test-parser-cmd: npm test
           test-rust: true
           rust-version: stable
+      - name: Test Python binding
+        run: uv run --no-sync poe test
+      - name: Test Node.js builds
+        run: npm exec --call "node --test test/node/build.test.js"
+      - name: Test Python builds
+        run: npm exec --call "node --test test/python/build.test.js"
       - name: Test Rust builds
         run: npm exec --call "node --test test/rust/build.test.js"
       - name: Validate queries

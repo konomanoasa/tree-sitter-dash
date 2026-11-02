@@ -114,7 +114,6 @@ const keywordRules = () =>
     ]),
   );
 
-// One stack entry per delimiter lets recovery reach the command.
 const PHYSICAL_RULES = {
   _word_tilde_start: "~",
   _assignment_tilde_start: "~",

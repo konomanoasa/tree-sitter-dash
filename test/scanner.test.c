@@ -4,6 +4,55 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../src/tree_sitter/parser.h"
+
+struct SourceNativeMock {
+  TSLexer lexer;
+  const int32_t *input;
+  size_t length;
+  size_t position;
+  size_t advances;
+  size_t marks;
+};
+
+static void source_native_advance(TSLexer *lexer, bool skip) {
+  struct SourceNativeMock *mock = (struct SourceNativeMock *)lexer;
+  assert(!skip);
+  assert(mock->position < mock->length);
+  mock->position += 1;
+  mock->advances += 1;
+  lexer->lookahead =
+    mock->position < mock->length ? mock->input[mock->position] : 0;
+}
+
+static void source_native_mark(TSLexer *lexer) {
+  struct SourceNativeMock *mock = (struct SourceNativeMock *)lexer;
+  mock->marks += 1;
+}
+
+static bool source_native_eof(const TSLexer *lexer) {
+  const struct SourceNativeMock *mock = (const struct SourceNativeMock *)lexer;
+  return mock->position == mock->length;
+}
+
+static void source_native_init(
+  struct SourceNativeMock *mock,
+  const int32_t *input,
+  size_t length
+) {
+  *mock = (struct SourceNativeMock){
+    .lexer =
+      {
+        .lookahead = length > 0 ? input[0] : 0,
+        .advance = source_native_advance,
+        .mark_end = source_native_mark,
+        .eof = source_native_eof,
+      },
+    .input = input,
+    .length = length,
+  };
+}
+
 #include "../src/scanner.c"
 
 static struct Scanner *test_state_create(void) {
@@ -679,53 +728,6 @@ static void test_source_failures_release_owned_memory(void) {
 }
 #endif
 
-struct SourceNativeMock {
-  TSLexer lexer;
-  const int32_t *input;
-  size_t length;
-  size_t position;
-  size_t advances;
-  size_t marks;
-};
-
-static void source_native_advance(TSLexer *lexer, bool skip) {
-  struct SourceNativeMock *mock = (struct SourceNativeMock *)lexer;
-  assert(!skip);
-  assert(mock->position < mock->length);
-  mock->position += 1;
-  mock->advances += 1;
-  lexer->lookahead =
-    mock->position < mock->length ? mock->input[mock->position] : 0;
-}
-
-static void source_native_mark(TSLexer *lexer) {
-  struct SourceNativeMock *mock = (struct SourceNativeMock *)lexer;
-  mock->marks += 1;
-}
-
-static bool source_native_eof(const TSLexer *lexer) {
-  const struct SourceNativeMock *mock = (const struct SourceNativeMock *)lexer;
-  return mock->position == mock->length;
-}
-
-static void source_native_init(
-  struct SourceNativeMock *mock,
-  const int32_t *input,
-  size_t length
-) {
-  *mock = (struct SourceNativeMock){
-    .lexer =
-      {
-        .lookahead = length > 0 ? input[0] : 0,
-        .advance = source_native_advance,
-        .mark_end = source_native_mark,
-        .eof = source_native_eof,
-      },
-    .input = input,
-    .length = length,
-  };
-}
-
 static void test_logical_context_changes_reclassify_cached_lookahead(void) {
   const int32_t input[] = {'\'', '\\', '\n', 'x', '\'', '\\', '\n', 'y'};
   struct SourceNativeMock mock;
@@ -1199,8 +1201,8 @@ test_embedded_readers_apply_source_views_before_comments_and_closers(void) {
     {"x=$((1 + $((2)))) ) tail", 1, ' '},
     {"x=$((1) 2)) ) tail", 1, ' '},
     {"x=$( (echo one); (echo two)) ) tail", 1, ' '},
-    {"x=${a:})} ) tail", 1, '}'},
-    {"x=${a:\\\n})} ) tail", 1, '}'},
+    {"x=${a:})} ) tail", 1, ' '},
+    {"x=${a:\\\n})} ) tail", 1, ' '},
     {"x=\"${a:}\"}\"}\" ) tail", 1, ' '},
     {"x=${a:-\\})} ) tail", 1, ' '},
     {"x=${a:-\"}\"} ) tail", 1, ' '},
@@ -2389,20 +2391,28 @@ static void test_here_document_sequence_requires_a_line_boundary(void) {
   const struct {
     const char *source;
     bool enabled;
+    bool word_continues;
     bool accepted;
   } cases[] = {
-    {"", true, true},
-    {" ", true, true},
-    {"\n", true, true},
-    {" \n", true, true},
-    {"\t \n", true, true},
-    {"#comment", true, true},
-    {" #comment\n", true, true},
-    {";", true, false},
-    {" argument\n", true, false},
-    {" >file\n", true, false},
-    {"", false, false},
-    {" \n", false, false},
+    {"", true, false, true},
+    {" ", true, false, true},
+    {"\n", true, false, true},
+    {" \n", true, false, true},
+    {"\t \n", true, false, true},
+    {"#comment", true, false, true},
+    {"#comment\n", true, false, true},
+    {" #comment\n", true, false, true},
+    {"#suffix", true, true, false},
+    {"#suffix\n", true, true, false},
+    {" #comment", true, true, true},
+    {" #comment\n", true, true, true},
+    {"", true, true, true},
+    {"\n", true, true, true},
+    {";", true, false, false},
+    {" argument\n", true, false, false},
+    {" >file\n", true, false, false},
+    {"", false, false, false},
+    {" \n", false, false, false},
   };
   for (size_t index = 0; index < ARRAY_LENGTH(cases); index += 1) {
     struct Scanner scanner = {0};
@@ -2417,6 +2427,7 @@ static void test_here_document_sequence_requires_a_line_boundary(void) {
     init_source_fixture(&fixture, cases[index].source, &stage, 1);
     bool valid[TOKEN_COUNT] = {false};
     valid[HERE_DOCUMENT_SEQUENCE_BEGIN] = cases[index].enabled;
+    valid[LITERAL_BEGIN] = cases[index].word_continues;
     assert(
       scan_dispatch(&scanner, &fixture.lookahead.lexer, valid) ==
       cases[index].accepted

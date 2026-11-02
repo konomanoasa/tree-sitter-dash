@@ -2345,7 +2345,6 @@ static bool defined_control_escape_byte(int32_t character, uint8_t *value) {
   }
 }
 
-// dash masks only the first byte of a multibyte operand.
 static bool
 append_control_escape(struct ByteBuffer *buffer, int32_t character) {
   uint8_t bytes[4];
@@ -2586,7 +2585,6 @@ struct HereDocumentMatch {
   bool matched;
 };
 
-/* Only the first line's tabs are stripped while matching a delimiter. */
 static bool match_here_document_delimiter(
   const struct LogicalLexer *view,
   const struct HereDocument *document,
@@ -3033,8 +3031,6 @@ static bool delimiter_parameter_operator(
   return append_codepoint(&reader->delimiter, character);
 }
 
-/* In the C locale, dash drops one invalid initial byte. After `${#`, it only
-   drops an invalid byte immediately followed by `}`. */
 static bool delimiter_parameter_prefix(struct DelimiterReader *reader) {
   TSLexer *lexer = reader->lexer;
   struct ByteBuffer *delimiter = &reader->delimiter;
@@ -4232,7 +4228,6 @@ scan_arithmetic_boundary(TSLexer *lexer, const bool *valid_symbols) {
   return false;
 }
 
-// Validate first to keep arithmetic subtree reuse deterministic.
 enum ValidationTokenKind {
   VALIDATION_TOKEN_NUMBER,
   VALIDATION_TOKEN_VARIABLE,
@@ -4699,8 +4694,14 @@ static void embedded_step(
   TSLexer *lexer = walk->lexer;
   struct EmbeddedSkip *skip = walk->skip;
   if (frame->closer == '}') {
+    bool colon_close =
+      frame->parameter_quote == PARAMETER_QUOTE_COLON && character == '}';
     frame->parameter_quote =
       parameter_quote_state_after(frame->parameter_quote, character);
+    if (colon_close) {
+      lexer->advance(lexer, false);
+      return;
+    }
   }
   bool quoted_parameter = frame->double_quoted_parameter &&
     frame->parameter_quote != PARAMETER_QUOTE_PATTERN;
@@ -6201,12 +6202,16 @@ static unsigned scanner_serialize(const struct Scanner *scanner, char *buffer) {
   return (unsigned)writer.length + 1;
 }
 
-static bool scan_here_document_sequence_begin(TSLexer *lexer) {
+static bool
+scan_here_document_sequence_begin(TSLexer *lexer, const bool *valid_symbols) {
   struct LookaheadLexer *lookahead = (struct LookaheadLexer *)lexer;
   size_t position = lookahead->position;
   lexer->mark_end(lexer);
-  scan_horizontal_blanks(lexer);
-  if (lexer->lookahead == '#') {
+  bool crossed_layout = scan_horizontal_blanks(lexer);
+  if (
+    lexer->lookahead == '#' &&
+    (crossed_layout || !word_source_can_continue(valid_symbols))
+  ) {
     advance_to_comment_end(lexer);
   }
   if (lexer->lookahead == '\n' || lexer_at_eof(lexer)) {
@@ -6481,7 +6486,7 @@ static enum ScanStep dispatch_document_line_tokens(
   if (
     valid[HERE_DOCUMENT_SEQUENCE_BEGIN] &&
     has_startable_pending_document(scanner) &&
-    scan_here_document_sequence_begin(lexer)
+    scan_here_document_sequence_begin(lexer, valid)
   ) {
     return SCAN_STEP_ACCEPT;
   }
@@ -7495,6 +7500,7 @@ static const struct LexicalOperator LEXICAL_OPERATORS[] = {
   {":=", PARAMETER_VALUE_OPERATOR_BEGIN},
   {":?", PARAMETER_VALUE_OPERATOR_BEGIN},
   {":+", PARAMETER_VALUE_OPERATOR_BEGIN},
+  {":}", PARAMETER_VALUE_OPERATOR_BEGIN},
   {"=", PARAMETER_VALUE_OPERATOR_BEGIN},
   {"+", PARAMETER_VALUE_OPERATOR_BEGIN},
   {"%%", PARAMETER_PATTERN_OPERATOR_BEGIN},

@@ -257,7 +257,29 @@ function main(arguments_) {
       scannerContract,
     ]),
   ];
-  const testOnly = ["--test", "--sanitize"].includes(arguments_[0]);
+  const testing = ["--test", "--sanitize"].includes(arguments_[0]);
+  const { clang, clangd, clangFormat } = testing
+    ? {
+        clang: findExecutable(
+          process.env.CC ?? "cc",
+          (process.env.PATH ?? "").split(delimiter),
+        ),
+        clangd: "",
+        clangFormat: "",
+      }
+    : llvmCommands();
+  if (
+    !testing &&
+    new Set([clang, clangd, clangFormat].map(versionMajor)).size !== 1
+  )
+    throw new Error(
+      "clang, clangd, and clang-format must use the same LLVM major version.",
+    );
+
+  if (arguments_[0] === "--write") {
+    run(clangFormat, ["-i", ...sources]);
+    return;
+  }
   const sanitizerArguments =
     arguments_[0] === "--sanitize"
       ? [
@@ -270,35 +292,20 @@ function main(arguments_) {
       : [];
   const directory = mkdtempSync(join(tmpdir(), `${packageName}-scanner-`));
   try {
-    if (!testOnly) {
-      const { clang, clangd, clangFormat } = llvmCommands();
-      if (new Set([clang, clangd, clangFormat].map(versionMajor)).size !== 1)
-        throw new Error(
-          "clang, clangd, and clang-format must use the same LLVM major version.",
-        );
+    if (!testing) {
       checkDiagnostics(clang, clangd, directory);
       for (const variant of variants) {
         if (variant.reuseAllocator)
           checkAllocatorSymbols(clang, variant, directory);
       }
-      run(clangFormat, [
-        ...(arguments_[0] === "--write" ? ["-i"] : ["--dry-run", "--Werror"]),
-        ...sources,
-      ]);
+      run(clangFormat, ["--dry-run", "--Werror", ...sources]);
       return;
     }
-    const clang = findExecutable(
-      process.platform === "darwin"
-        ? "/opt/homebrew/opt/llvm/bin/clang"
-        : (process.env.CLANG ?? "clang"),
-      (process.env.PATH ?? "").split(delimiter),
-    );
     for (const standard of ["c99", "c17"]) {
       for (const variant of variants) {
         const compilerArguments = [
           ...sanitizerArguments,
           `-std=${standard}`,
-          ...warningArguments,
           "-I",
           variant.includeDirectory,
         ];

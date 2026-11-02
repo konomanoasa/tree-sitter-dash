@@ -17,7 +17,7 @@ jobs:
 
   crates-io:
     needs: ci
-    runs-on: macos-15
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
@@ -38,7 +38,7 @@ jobs:
 
   npm:
     needs: ci
-    runs-on: macos-15
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write

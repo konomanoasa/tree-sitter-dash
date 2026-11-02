@@ -41,6 +41,65 @@ next
     (newline_list)))
 
 ==================
+pending here-documents preserve a quoted word's hash suffix before a real comment
+==================
+
+cat <<EOF; echo "$@"# c # actual
+BODY
+EOF
+
+------------------
+
+(program
+  leading: (linebreak
+    (newline_list))
+  commands: (complete_commands
+    command: (complete_command
+      body: (list
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    redirect: (io_redirect
+                      body: (io_here
+                        operator: (dless)
+                        end: (here_end
+                          word: (here_end_text))))))))))
+        separator: (separator_op)
+        and_or: (and_or
+          pipeline: (pipeline
+            sequence: (pipe_sequence
+              command: (command
+                body: (simple_command
+                  name: (cmd_name
+                    (word
+                      (literal)))
+                  suffix: (cmd_suffix
+                    word: (word
+                      (double_quoted
+                        (parameter_expansion
+                          parameter: (special_parameter)))
+                      (literal))
+                    word: (word
+                      (literal)))))))))))
+  trailing: (linebreak
+    (newline_list
+      (here_document_sequence
+        comment: (comment
+          (comment_text))
+        line_end: (here_document_line_end)
+        document: (here_document
+          body: (here_document_body
+            (here_document_text))
+          end: (here_document_end
+            (here_document_end_text)))))))
+
+==================
 leading and trailing layout is not part of a comment node
 ==================
 
