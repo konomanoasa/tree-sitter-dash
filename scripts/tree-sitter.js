@@ -227,7 +227,7 @@ function generateParsers(outputRoot = root) {
 }
 
 function buildParsers(runner) {
-  const directory = join(root, "build");
+  const directory = join(root, "parsers");
   mkdirSync(directory, { recursive: true });
   for (const { name, path } of grammars) {
     const library = join(

@@ -35,13 +35,14 @@
     "access": "public"
   },
   "scripts": {
-    "build": "node-gyp rebuild && node-gyp configure -- -f compile_commands_json && npm run tree-sitter -- build-all",
+    "build": "node-gyp rebuild && node-gyp configure -- -f compile_commands_json",
+    "build:parser": "npm run tree-sitter -- build-all",
     "check": "biome check . && tsc",
     "check:queries": "npm run tree-sitter -- check-queries",
     "format": "biome format --write .",
     "generate": "npm run tree-sitter -- generate-all",
     "install": "node-gyp-build",
-    "test": "npm run tree-sitter -- test-corpus --rebuild && node --test --test-concurrency=1 test/bindings.test.js test/build.test.js test/cst.test.js test/highlight.test.js test/incremental.test.js test/parser.test.js test/recovery.test.js && node scripts/check-c.js --test",
+    "test": "npm run tree-sitter -- test-corpus --rebuild && node --test --test-concurrency=1 test/bindings.test.js test/build.test.js test/cst.test.js test/here-document.test.js test/highlight.test.js test/incremental.test.js test/parser.test.js test/recovery.test.js test/word.test.js && node scripts/check-c.js --test",
     "test:fuzz": "npm run tree-sitter -- fuzz-all --iterations 100 --edits 5",
     "test:performance": "node --test test/performance.test.js",
     "test:sanitize": "node scripts/check-c.js --sanitize",

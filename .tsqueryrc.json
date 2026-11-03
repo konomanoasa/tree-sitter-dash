@@ -1,5 +1,5 @@
 {
-  "parser_install_directories": ["build", "."],
+  "parser_install_directories": ["parsers"],
   "valid_captures": {
     "highlights": {
       "attribute": "Annotations",

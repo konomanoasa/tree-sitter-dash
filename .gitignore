@@ -1,10 +1,9 @@
 .DS_Store
 
-build/
-*.dylib
-*.o
+parsers/
 
 node_modules/
+build/
 
 .venv/
 dist/

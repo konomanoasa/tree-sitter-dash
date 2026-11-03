@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { sourceNodes } from "./support/cst.js";
 import {
   assertIncrementalEqualsFresh,
   assertRepeatedColdParse,
@@ -120,5 +121,268 @@ for (const [name, body, removed, inserted] of recoveryCases) {
     };
     assertIncrementalEqualsFresh(damaged, initial, name, repair);
     assertIncrementalEqualsFresh(initial, initial, name, edit, repair);
+  });
+}
+
+for (const [name, body, closing] of [
+  ["single quote", "echo '日本語", "'"],
+  ["double quote", 'echo "日本語', '"'],
+  ["dollar single quote", "echo $'\\u0041", "'"],
+  ["command substitution", "echo $(printf 日本語", ")"],
+  ["backquote", "echo `printf 日本語", "`"],
+  ["parameter operand", "echo ${value:-日本語", "}"],
+]) {
+  test(`unterminated ${name}: closing at EOF restores the full CST after deletion`, () => {
+    const prefix = "echo BEFORE\n";
+    const brokenText = prefix + body;
+    const validText = `${brokenText}${closing}\necho AFTER\n`;
+    const valid = writeSource(`${name}-closed`, validText);
+    const broken = writeSource(`${name}-open`, brokenText);
+    assert.equal(runParse({ source: broken, mode: "recovery" }).recovery, true);
+    assertRepeatedColdParse("recovery", broken, name);
+    const tail = `${closing}\necho AFTER\n`;
+    const byte = Buffer.byteLength(brokenText);
+    const remove = { byte, deleteBytes: Buffer.byteLength(tail), insert: "" };
+    const repair = { byte, deleteBytes: 0, insert: tail };
+    assertIncrementalEqualsFresh(broken, valid, name, repair);
+    assertIncrementalEqualsFresh(valid, valid, name, remove, repair);
+  });
+}
+
+for (const { name, source, removed, inserted, owner } of [
+  {
+    name: "if condition",
+    source: "if CHECK; then :; fi",
+    removed: "CHECK",
+    inserted: "|",
+    owner: "if_clause",
+  },
+  {
+    name: "then body",
+    source: "if :; then BODY; fi",
+    removed: "BODY",
+    inserted: "&&",
+    owner: "if_clause",
+  },
+  {
+    name: "else body",
+    source: "if :; then :; else BODY; fi",
+    removed: "BODY",
+    inserted: "|",
+    owner: "if_clause",
+  },
+  {
+    name: "elif condition",
+    source: "if :; then :; elif CHECK; then :; fi",
+    removed: "CHECK",
+    inserted: "||",
+    owner: "if_clause",
+  },
+  {
+    name: "while condition",
+    source: "while CHECK; do :; done",
+    removed: "CHECK",
+    inserted: "|",
+    owner: "while_clause",
+  },
+  {
+    name: "while body",
+    source: "while :; do BODY; done",
+    removed: "BODY",
+    inserted: "&&",
+    owner: "while_clause",
+  },
+  {
+    name: "until condition",
+    source: "until CHECK; do :; done",
+    removed: "CHECK",
+    inserted: "||",
+    owner: "until_clause",
+  },
+  {
+    name: "until body",
+    source: "until :; do BODY; done",
+    removed: "BODY",
+    inserted: "|",
+    owner: "until_clause",
+  },
+  {
+    name: "for body",
+    source: "for x in a b; do BODY; done",
+    removed: "BODY",
+    inserted: "&&",
+    owner: "for_clause",
+  },
+  {
+    name: "brace body",
+    source: "{ BODY; }",
+    removed: "BODY",
+    inserted: "|",
+    owner: "brace_group",
+  },
+  {
+    name: "subshell body",
+    source: "(BODY)",
+    removed: "BODY",
+    inserted: "&&",
+    owner: "subshell",
+  },
+  {
+    name: "case selector keyword",
+    source: "case x in a) :;; esac",
+    removed: "in",
+    inserted: "",
+    owner: "case_clause",
+  },
+  {
+    name: "function closing parenthesis",
+    source: "f() { :; }",
+    removed: ")",
+    inserted: "",
+    owner: "function_definition",
+  },
+  {
+    name: "pipeline right operand",
+    source: "printf x | RIGHT",
+    removed: "RIGHT",
+    inserted: "|",
+    owner: "pipeline",
+  },
+  {
+    name: "and-list right operand",
+    source: "printf x && RIGHT",
+    removed: "RIGHT",
+    inserted: "&&",
+    owner: "and_or",
+  },
+  {
+    name: "or-list right operand",
+    source: "printf x || RIGHT",
+    removed: "RIGHT",
+    inserted: "||",
+    owner: "and_or",
+  },
+  {
+    name: "output file",
+    source: "printf x >TARGET; :",
+    removed: "TARGET",
+    inserted: "",
+    owner: "io_file",
+  },
+  {
+    name: "input file",
+    source: "cat <TARGET; :",
+    removed: "TARGET",
+    inserted: "",
+    owner: "io_file",
+  },
+  {
+    name: "descriptor target",
+    source: "printf x 2>&TARGET; :",
+    removed: "TARGET",
+    inserted: "",
+    owner: "io_file",
+  },
+  {
+    name: "case pattern separator",
+    source: "case x in a) :;; esac",
+    removed: ")",
+    inserted: "",
+    owner: "case_clause",
+  },
+]) {
+  test(`repairing ${name} restores its owner and surrounding commands`, () => {
+    const text = `echo BEFORE\n${source}\necho AFTER\n`;
+    const offset = text.indexOf(removed);
+    assert.notEqual(offset, -1);
+    const damagedText =
+      text.slice(0, offset) + inserted + text.slice(offset + removed.length);
+    const valid = writeSource(`${name}-valid`, text);
+    const damaged = writeSource(`${name}-damaged`, damagedText);
+    const edit = {
+      byte: Buffer.byteLength(text.slice(0, offset)),
+      deleteBytes: Buffer.byteLength(removed),
+      insert: inserted,
+    };
+    const repair = {
+      byte: edit.byte,
+      deleteBytes: Buffer.byteLength(inserted),
+      insert: removed,
+    };
+    assert.equal(
+      runParse({ source: damaged, mode: "recovery" }).recovery,
+      true,
+      name,
+    );
+    assert.equal(
+      runParse({
+        source: valid,
+        edits: [edit],
+        expectedSource: damaged,
+        mode: "recovery",
+      }).recovery,
+      true,
+      name,
+    );
+    assertRepeatedColdParse("recovery", damaged, name);
+    assertIncrementalEqualsFresh(damaged, valid, `${name}: repair`, repair);
+    assertIncrementalEqualsFresh(
+      valid,
+      valid,
+      `${name}: roundtrip`,
+      edit,
+      repair,
+    );
+    const nodes = sourceNodes(runParse({ source: valid }).output, text);
+    assert.ok(
+      nodes.some(({ type }) => type === owner),
+      `${name}: ${owner}`,
+    );
+    for (const sentinel of ["BEFORE", "AFTER"]) {
+      assert.ok(
+        nodes.some(({ type, text }) => type === "word" && text === sentinel),
+        `${name}: ${sentinel}`,
+      );
+    }
+  });
+}
+
+for (const [name, prefix, suffix, closing] of [
+  ["conditional", "if :; then\n", "fi\n", "fi"],
+  ["while", "while :; do\n", "done\n", "done"],
+  ["until", "until :; do\n", "done\n", "done"],
+  ["for", "for x in a; do\n", "done\n", "done"],
+  ["case", "case x in a)\n", ";; esac\n", "esac"],
+]) {
+  test(`a continued ${name} closing keyword survives body damage and repair`, () => {
+    const continued = `${closing[0]}\\\n${closing.slice(1)}`;
+    const text = `echo BEFORE\n${prefix}printf 日本語\n${suffix.replace(closing, continued)}echo AFTER\n`;
+    const initial = writeSource(`${name}-continued`, text);
+    const byte = Buffer.byteLength(text.slice(0, text.indexOf("printf")));
+    const removed = "printf 日本語";
+    const brokenText = text.replace(removed, "&&");
+    const broken = writeSource(`${name}-continued-broken`, brokenText);
+    const damage = {
+      byte,
+      deleteBytes: Buffer.byteLength(removed),
+      insert: "&&",
+    };
+    const repair = { byte, deleteBytes: 2, insert: removed };
+    assert.equal(runParse({ source: broken, mode: "recovery" }).recovery, true);
+    assertIncrementalEqualsFresh(broken, initial, name, repair);
+    assertIncrementalEqualsFresh(initial, initial, name, damage, repair);
+    const nodes = sourceNodes(runParse({ source: initial }).output, text);
+    const keyword = nodes.find(({ type }) => type === `${closing}_keyword`);
+    assert.ok(keyword);
+    assert.equal(keyword.text, continued);
+    const continuation = nodes.filter(
+      ({ type }) => type === "line_continuation",
+    );
+    assert.equal(continuation.length, 1);
+    assert.equal(continuation[0].text, "\\");
+    assert.ok(
+      continuation[0].start >= keyword.start &&
+        continuation[0].end <= keyword.end,
+    );
   });
 }

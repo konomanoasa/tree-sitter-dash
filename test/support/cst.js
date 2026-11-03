@@ -260,6 +260,7 @@ export {
   assertCstOutputsEqual,
   assertCstSourceContract,
   assertFreshOutputsEqual,
+  cstFingerprint,
   hasRecovery,
   nodeIdentity,
   parseCst,
